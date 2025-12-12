@@ -15,9 +15,9 @@ import { timeout } from "hono/timeout";
 import { rateLimiter } from "hono-rate-limiter";
 
 // Context variables type for Hono
-type Variables = {
+interface Variables {
   requestId: string;
-};
+}
 
 // Helper for optional URL that treats empty string as undefined
 const optionalUrl = z
