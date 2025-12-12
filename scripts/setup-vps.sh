@@ -26,8 +26,15 @@ if ! command -v docker &> /dev/null; then
     sudo usermod -aG docker $USER
     rm get-docker.sh
     echo -e "${GREEN}✅ Docker installed successfully${NC}"
+    echo -e "${YELLOW}⚠️  IMPORTANT: Log out and log back in for docker group changes to take effect${NC}"
 else
     echo -e "${GREEN}✅ Docker already installed${NC}"
+    # Add user to docker group if not already
+    if ! groups | grep -q docker; then
+        echo -e "${YELLOW}🔐 Adding user to docker group...${NC}"
+        sudo usermod -aG docker $USER
+        echo -e "${YELLOW}⚠️  IMPORTANT: Log out and log back in for docker group changes to take effect${NC}"
+    fi
 fi
 
 # Install Docker Compose if not installed

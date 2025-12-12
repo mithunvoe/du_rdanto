@@ -33,17 +33,25 @@ echo -e "${YELLOW}📥 Pulling latest code from GitHub...${NC}"
 git fetch origin main
 git reset --hard origin/main
 
+# Check if user is in docker group, add sudo if needed
+if groups | grep -q docker; then
+    DOCKER_CMD="docker"
+else
+    echo -e "${YELLOW}⚠️  User not in docker group, using sudo${NC}"
+    DOCKER_CMD="sudo docker"
+fi
+
 # Stop existing containers
 echo -e "${YELLOW}🛑 Stopping existing containers...${NC}"
-docker compose -f docker/compose.prod.yml down || true
+$DOCKER_CMD compose -f docker/compose.prod.yml down || true
 
 # Remove old images to save space (optional)
 echo -e "${YELLOW}🧹 Cleaning up old Docker images...${NC}"
-docker image prune -f || true
+$DOCKER_CMD image prune -f || true
 
 # Build and start containers
 echo -e "${YELLOW}🏗️  Building and starting containers...${NC}"
-docker compose -f docker/compose.prod.yml up --build -d
+$DOCKER_CMD compose -f docker/compose.prod.yml up --build -d
 
 # Wait for containers to start
 echo -e "${YELLOW}⏳ Waiting for containers to start...${NC}"
@@ -51,11 +59,11 @@ sleep 5
 
 # Show running containers
 echo -e "${GREEN}✅ Deployment complete! Running containers:${NC}"
-docker compose -f docker/compose.prod.yml ps
+$DOCKER_CMD compose -f docker/compose.prod.yml ps
 
 # Show logs (last 30 lines)
 echo -e "${GREEN}📋 Recent logs:${NC}"
-docker compose -f docker/compose.prod.yml logs --tail=30
+$DOCKER_CMD compose -f docker/compose.prod.yml logs --tail=30
 
 # Health check
 echo -e "${YELLOW}🔍 Checking API health...${NC}"

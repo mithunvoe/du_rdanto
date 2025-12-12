@@ -39,8 +39,8 @@ jobs:
             echo "🚀 Starting deployment..."
 
             # Navigate to project directory
-            cd /home/ubuntu/cuet-micro-ops-hackthon-2025 || cd /home/ubuntu/du_rdanto || {
-              echo "Creating project directory..."
+            cd /home/ubuntu/du_rdanto || {
+              echo "📁 Creating project directory..."
               cd /home/ubuntu
               git clone https://github.com/mithunvoe/du_rdanto.git
               cd du_rdanto
@@ -51,25 +51,33 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
+            # Add user to docker group if not already (fixes permission issues)
+            if ! groups | grep -q docker; then
+              echo "🔐 Adding user to docker group..."
+              sudo usermod -aG docker $USER
+              echo "⚠️  Note: You may need to log out and back in for group changes to take effect"
+              echo "⚠️  Using sudo for docker commands in this deployment"
+            fi
+
             # Stop existing containers
             echo "🛑 Stopping existing containers..."
-            docker compose -f docker/compose.prod.yml down || true
+            sudo docker compose -f docker/compose.prod.yml down || true
 
             # Remove old images (optional, saves space)
             echo "🧹 Cleaning up old images..."
-            docker image prune -f || true
+            sudo docker image prune -f || true
 
             # Build and start containers
             echo "🏗️  Building and starting containers..."
-            docker compose -f docker/compose.prod.yml up --build -d
+            sudo docker compose -f docker/compose.prod.yml up --build -d
 
             # Show running containers
             echo "✅ Deployment complete! Running containers:"
-            docker compose -f docker/compose.prod.yml ps
+            sudo docker compose -f docker/compose.prod.yml ps
 
             # Show logs (last 20 lines)
             echo "📋 Recent logs:"
-            docker compose -f docker/compose.prod.yml logs --tail=20
+            sudo docker compose -f docker/compose.prod.yml logs --tail=20
 
           ENDSSH
 
