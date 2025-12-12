@@ -27,9 +27,11 @@ jobs:
       - name: Discord Notification (start)
         if: ${{ env.DISCORD_WEBHOOK != '' }}
         uses: sarisia/actions-status-discord@v1
+        continue-on-error: true
         with:
           webhook: ${{ env.DISCORD_WEBHOOK }}
-          status: "in_progress"
+          # The action only accepts success/failure/cancelled; use success for "started"
+          status: "success"
           title: "🚀 CI/CD Pipeline Started"
           description: |
             **Repository:** ${{ github.repository }}
