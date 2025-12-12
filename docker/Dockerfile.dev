@@ -1,5 +1,8 @@
 FROM node:24-alpine
 
+# Use reliable mirror for Alpine packages
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
 WORKDIR /app
 
 COPY package*.json ./

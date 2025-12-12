@@ -9,8 +9,10 @@ RUN npm ci --only=production
 FROM node:24-alpine
 
 # Install tini and curl for signal handling and healthchecks
-# Note: DNS must be configured at Docker daemon level (daemon.json)
-RUN apk add --no-cache tini curl
+# Use reliable mirror and update package index before installing
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+    apk update && \
+    apk add --no-cache tini curl
 
 WORKDIR /app
 
