@@ -204,6 +204,8 @@ jobs:
     needs: [lint, test, build, security-scan]
     # Skip notification on pull_request events (secrets are unavailable on forks)
     if: ${{ always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+    env:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
     steps:
       - name: Check job statuses
         id: check
@@ -218,10 +220,10 @@ jobs:
           fi
 
       - name: Discord Notification
-        if: ${{ always() && secrets.DISCORD_WEBHOOK != '' }}
+        if: ${{ always() && env.DISCORD_WEBHOOK != '' }}
         uses: sarisia/actions-status-discord@v1
         with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          webhook: ${{ env.DISCORD_WEBHOOK }}
           status: ${{ steps.check.outputs.status }}
           title: "🚀 CI/CD Pipeline"
           description: |
