@@ -6,12 +6,12 @@ This guide explains how to set up Discord notifications for your CI/CD pipeline 
 
 The project includes Discord webhook integration for the following workflows:
 
-| Workflow               | Notification Type                          | When it Notifies                        |
-| ---------------------- | ------------------------------------------ | --------------------------------------- |
-| **CI/CD Pipeline**     | Build status with detailed job results    | On every push/PR (always)               |
-| **VPS Deployment**     | Deployment success/failure with URLs       | After deployment completes              |
-| **CodeQL Security**    | Security analysis results                  | On failure or weekly scheduled scans    |
-| **Manual Deployment**  | Manual deployment status with environment  | After manual deployment completes       |
+| Workflow              | Notification Type                         | When it Notifies                     |
+| --------------------- | ----------------------------------------- | ------------------------------------ |
+| **CI/CD Pipeline**    | Build status with detailed job results    | On every push/PR (always)            |
+| **VPS Deployment**    | Deployment success/failure with URLs      | After deployment completes           |
+| **CodeQL Security**   | Security analysis results                 | On failure or weekly scheduled scans |
+| **Manual Deployment** | Manual deployment status with environment | After manual deployment completes    |
 
 ## Setup Instructions
 
@@ -58,6 +58,7 @@ git push origin main
 ```
 
 Or trigger manually:
+
 1. Go to **Actions** tab in GitHub
 2. Select **CI/CD Pipeline** workflow
 3. Click **Run workflow**
@@ -85,6 +86,7 @@ Job Status:
 ```
 
 **Color Coding:**
+
 - 🟢 Green: All jobs succeeded
 - 🔴 Red: One or more jobs failed
 
@@ -105,6 +107,7 @@ Triggered by: username
 ```
 
 **Color Coding:**
+
 - 🟢 Green: Deployment successful
 - 🔴 Red: Deployment failed
 
@@ -124,10 +127,12 @@ Analysis Status: ✅ No Issues Found / ⚠️ Security Issues Detected
 ```
 
 **Color Coding:**
+
 - 🟢 Green: No security issues
 - 🟠 Orange: Security issues detected
 
 **When it Notifies:**
+
 - On failures (security issues detected)
 - On scheduled weekly scans (Mondays at 00:00 UTC)
 - NOT on successful push/PR (to reduce noise)
@@ -168,6 +173,7 @@ If you want different channels for different types of notifications:
 To customize notification appearance, edit the workflow files:
 
 **Color Codes:**
+
 - `0x00FF00` - Green (success)
 - `0xFF0000` - Red (failure)
 - `0xFFA500` - Orange (warning)
@@ -175,6 +181,7 @@ To customize notification appearance, edit the workflow files:
 - `0x0099FF` - Blue (info)
 
 **Username and Avatar:**
+
 ```yaml
 username: "Your Bot Name"
 avatar_url: "https://your-avatar-url.png"
@@ -192,6 +199,7 @@ To temporarily disable notifications without removing the secret:
 ### Notifications Not Appearing
 
 **Check 1: Webhook URL is Correct**
+
 - Verify the webhook URL in GitHub Secrets
 - Test the webhook manually using curl:
   ```bash
@@ -201,16 +209,19 @@ To temporarily disable notifications without removing the secret:
   ```
 
 **Check 2: Workflow Permissions**
+
 - Ensure GitHub Actions has permission to access secrets
 - Check workflow logs for authentication errors
 
 **Check 3: Discord Channel Permissions**
+
 - Ensure the webhook has permission to post in the channel
 - Check Discord server settings
 
 ### Notifications are Truncated
 
 Discord has a 2000 character limit for embeds. If notifications are cut off:
+
 - Reduce the description length in workflow files
 - Remove unnecessary details
 - Use links instead of full text
@@ -218,10 +229,12 @@ Discord has a 2000 character limit for embeds. If notifications are cut off:
 ### Too Many Notifications
 
 **Reduce CodeQL Notifications:**
+
 - The CodeQL workflow only notifies on failures or scheduled scans
 - To reduce further, modify the condition in `.github/workflows/codeql.yml`
 
 **Rate Limiting:**
+
 - Discord webhooks are limited to 30 requests per minute
 - If you hit this limit, consider batching notifications or reducing frequency
 
@@ -235,11 +248,13 @@ Discord has a 2000 character limit for embeds. If notifications are cut off:
 ## Notification Features
 
 ### Rich Embeds
+
 - Color-coded status indicators
 - Clickable links to workflows, commits, and deployments
 - Formatted markdown for readability
 
 ### Contextual Information
+
 - Commit SHA and message
 - Branch name
 - Author/trigger person
@@ -247,6 +262,7 @@ Discord has a 2000 character limit for embeds. If notifications are cut off:
 - Job-specific status
 
 ### Action Links
+
 - Direct links to workflow runs
 - Links to deployment URLs
 - Links to security findings
@@ -255,6 +271,7 @@ Discord has a 2000 character limit for embeds. If notifications are cut off:
 ## Support
 
 For issues or questions:
+
 - Check GitHub Actions logs for errors
 - Review Discord webhook settings
 - Consult GitHub Actions documentation
