@@ -14,6 +14,11 @@ import { secureHeaders } from "hono/secure-headers";
 import { timeout } from "hono/timeout";
 import { rateLimiter } from "hono-rate-limiter";
 
+// Context variables type for Hono
+type Variables = {
+  requestId: string;
+};
+
 // Helper for optional URL that treats empty string as undefined
 const optionalUrl = z
   .string()
@@ -74,7 +79,7 @@ const otelSDK = new NodeSDK({
 });
 otelSDK.start();
 
-const app = new OpenAPIHono();
+const app = new OpenAPIHono<{ Variables: Variables }>();
 
 // Request ID middleware - adds unique ID to each request
 app.use(async (c, next) => {
@@ -380,9 +385,15 @@ app.openapi(rootRoute, (c) => {
 });
 
 app.openapi(healthRoute, async (c) => {
+  const requestId = c.get("requestId") as string | undefined;
   const storageHealthy = await checkS3Health();
   const status = storageHealthy ? "healthy" : "unhealthy";
   const httpStatus = storageHealthy ? 200 : 503;
+  
+  console.log(
+    `[Health] ${status.toUpperCase()} | storage=${storageHealthy ? "ok" : "error"} | requestId=${requestId ?? "unknown"}`,
+  );
+  
   return c.json(
     {
       status,

@@ -27,9 +27,10 @@ Once services are running, access:
   - View distributed traces
   - Search by service, operation, tags
 
-- **Prometheus**: http://localhost:9090
+- **Prometheus**: http://localhost:9092
   - Query metrics
   - View targets status
+  - Note: Port 9092 maps to internal port 9090
 
 - **Loki**: http://localhost:3100
   - Log aggregation endpoint
@@ -101,7 +102,7 @@ Once services are running, access:
 - Worker activity
 - System resources (CPU, memory)
 
-**Access**: http://localhost:9092
+**Access**: http://localhost:9092 (external port, maps to internal 9090)
 
 **Example Queries**:
 ```promql
@@ -176,6 +177,111 @@ rate(http_requests_total{status=~"5.."}[5m])
 
 **Pre-configured Data Sources**:
 1. Prometheus (metrics)
+2. Loki (logs)
+3. Jaeger (traces)
+
+### 7. Viewing Backend Logs in Grafana
+
+**Backend logs are automatically collected** via Promtail, which scrapes Docker container logs and ships them to Loki. The logs are then viewable in Grafana.
+
+#### Quick Start - View Backend Logs
+
+1. **Access Grafana**: http://localhost:3001 (admin/admin)
+2. **Go to Explore**: Click the compass icon (Explore) in the left sidebar
+3. **Select Loki**: Choose "Loki" from the data source dropdown
+4. **Query logs**: Use LogQL queries to filter backend logs
+
+#### Example LogQL Queries
+
+**View all backend container logs:**
+```logql
+{container=~".*delineate-app.*"}
+```
+
+**View logs by service name:**
+```logql
+{service="delineate-app"}
+```
+
+**View error logs only:**
+```logql
+{container=~".*delineate-app.*"} |= "error"
+```
+
+**View download-related logs:**
+```logql
+{container=~".*delineate-app.*"} |~ "Download"
+```
+
+**View logs with specific patterns:**
+```logql
+{container=~".*delineate-app.*"} | json | level="error"
+```
+
+#### Log Collection Architecture
+
+```
+Backend Container (delineate-app)
+    ↓ (stdout/stderr)
+Docker Logs
+    ↓ (scraped by)
+Promtail
+    ↓ (shipped to)
+Loki
+    ↓ (queried via)
+Grafana UI
+```
+
+#### Verifying Log Collection
+
+Run the verification script:
+```bash
+./scripts/check-logs.sh
+```
+
+Or manually check:
+```bash
+# Check Promtail is running
+docker ps | grep promtail
+
+# Check Promtail logs
+docker logs promtail --tail 50
+
+# Check if logs are in Loki
+curl -G "http://localhost:3100/loki/api/v1/query_range" \
+  --data-urlencode 'query={container=~".*delineate-app.*"}' \
+  --data-urlencode 'limit=5'
+```
+
+#### Troubleshooting Log Collection
+
+**If logs are not appearing:**
+
+1. **Verify Promtail is running:**
+   ```bash
+   docker ps | grep promtail
+   docker logs promtail
+   ```
+
+2. **Check Docker socket access:**
+   - Promtail needs access to `/var/run/docker.sock`
+   - Verify volume mount in `compose.prod.observability.yml`
+
+3. **Verify backend container is running:**
+   ```bash
+   docker ps | grep delineate-app
+   docker logs delineate-app --tail 10
+   ```
+
+4. **Check Loki is receiving logs:**
+   ```bash
+   curl http://localhost:3100/ready
+   curl http://localhost:3100/metrics | grep loki_distributor_lines_received_total
+   ```
+
+5. **Verify network connectivity:**
+   - All services should be on `delineate-network`
+   - Check: `docker network inspect delineate-network`
 
 ## Setting Up Grafana Dashboards
 
@@ -379,7 +485,7 @@ logger.info('Download initiated', {
 ### Metrics Not Appearing
 
 1. Check Prometheus targets:
-   - http://localhost:9090/targets
+   - http://localhost:9092/targets
 
 2. Verify scrape configuration in `prometheus.yml`
 

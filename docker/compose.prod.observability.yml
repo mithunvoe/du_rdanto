@@ -186,8 +186,53 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
     depends_on:
       - prometheus
+      - loki
+      - jaeger
+    restart: unless-stopped
+    networks:
+      - delineate-network
+
+  # Jaeger (Distributed Tracing)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # Jaeger HTTP collector
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    restart: unless-stopped
+    networks:
+      - delineate-network
+
+  # Loki (Log Aggregation)
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    restart: unless-stopped
+    networks:
+      - delineate-network
+
+  # Promtail (Log Shipper to Loki)
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
     restart: unless-stopped
     networks:
       - delineate-network
@@ -198,6 +243,7 @@ volumes:
   prometheus-data:
   elasticsearch-data:
   grafana-data:
+  loki-data:
 
 networks:
   delineate-network:
