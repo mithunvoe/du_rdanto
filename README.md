@@ -2,6 +2,7 @@
 
 [![CI/CD Pipeline](https://github.com/mithunvoe/du_rdanto/actions/workflows/ci.yml/badge.svg)](https://github.com/mithunvoe/du_rdanto/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/mithunvoe/du_rdanto/actions/workflows/codeql.yml/badge.svg)](https://github.com/mithunvoe/du_rdanto/actions/workflows/codeql.yml)
+[![Deploy to VPS](https://github.com/mithunvoe/du_rdanto/actions/workflows/deploy-vps.yml/badge.svg)](https://github.com/mithunvoe/du_rdanto/actions/workflows/deploy-vps.yml)
 [![Manual Deploy](https://github.com/mithunvoe/du_rdanto/actions/workflows/manual-deploy.yml/badge.svg)](https://github.com/mithunvoe/du_rdanto/actions/workflows/manual-deploy.yml)
 
 ## The Scenario
@@ -585,13 +586,26 @@ npm run test:e2e      # End-to-end tests
 
 ### Deployment
 
-The pipeline includes a deployment stage that can be configured for:
+The project includes automatic deployment to production VPS:
+
+**🚀 Automatic VPS Deployment (Production)**
+
+- Triggers on push to `main` branch
+- Automatically deploys to: http://36.255.70.236:3000
+- Uses Docker Compose for container orchestration
+- Zero-downtime deployment process
+- See [VPS Deployment Guide](VPS_DEPLOYMENT_GUIDE.md) for setup instructions
+
+**Optional Cloud Platforms**:
 
 - **Railway**: Uncomment Railway deployment in [ci.yml](.github/workflows/ci.yml#L182-L186)
 - **Render**: Add your deploy hook URL to secrets
 - **Fly.io**: Configure Fly.io token in repository secrets
 
-See [.github/workflows/ci.yml](.github/workflows/ci.yml) for deployment configuration.
+Deployment workflows:
+
+- **Production VPS**: [.github/workflows/deploy-vps.yml](.github/workflows/deploy-vps.yml)
+- **Manual Deploy**: [.github/workflows/manual-deploy.yml](.github/workflows/manual-deploy.yml)
 
 ### Security Scanning
 

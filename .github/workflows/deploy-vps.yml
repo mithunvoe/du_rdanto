@@ -1,0 +1,104 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to Production VPS
+    runs-on: ubuntu-24.04
+    environment:
+      name: production
+      url: http://36.255.70.236:3000
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 36.255.70.236 >> ~/.ssh/known_hosts
+
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${VPS_USER}@${VPS_HOST} << 'ENDSSH'
+            set -e
+
+            echo "🚀 Starting deployment..."
+
+            # Navigate to project directory
+            cd /home/ubuntu/cuet-micro-ops-hackthon-2025 || cd /home/ubuntu/du_rdanto || {
+              echo "Creating project directory..."
+              cd /home/ubuntu
+              git clone https://github.com/mithunvoe/du_rdanto.git
+              cd du_rdanto
+            }
+
+            # Pull latest changes
+            echo "📥 Pulling latest code from GitHub..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Stop existing containers
+            echo "🛑 Stopping existing containers..."
+            docker compose -f docker/compose.prod.yml down || true
+
+            # Remove old images (optional, saves space)
+            echo "🧹 Cleaning up old images..."
+            docker image prune -f || true
+
+            # Build and start containers
+            echo "🏗️  Building and starting containers..."
+            docker compose -f docker/compose.prod.yml up --build -d
+
+            # Show running containers
+            echo "✅ Deployment complete! Running containers:"
+            docker compose -f docker/compose.prod.yml ps
+
+            # Show logs (last 20 lines)
+            echo "📋 Recent logs:"
+            docker compose -f docker/compose.prod.yml logs --tail=20
+
+          ENDSSH
+
+      - name: Verify deployment
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          echo "🔍 Verifying deployment..."
+          sleep 10
+
+          # Check if API is responding
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://${VPS_HOST}:3000/health || echo "000")
+
+          if [ "$response" = "200" ] || [ "$response" = "503" ]; then
+            echo "✅ Deployment verified! API is responding (HTTP $response)"
+          else
+            echo "⚠️  Warning: API health check returned HTTP $response"
+            echo "Check the logs on the VPS for more details"
+          fi
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Production VPS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Host**: ${{ secrets.VPS_HOST }}:3000" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 **Access the API**: http://${{ secrets.VPS_HOST }}:3000" >> $GITHUB_STEP_SUMMARY
+          echo "📚 **API Docs**: http://${{ secrets.VPS_HOST }}:3000/docs" >> $GITHUB_STEP_SUMMARY
