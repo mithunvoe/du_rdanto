@@ -18,6 +18,9 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY package*.json ./
 COPY src ./src
 
+# Create .env file if it doesn't exist (environment variables are set via docker-compose)
+RUN touch .env || true
+
 # Use non-root user with specific UID
 USER node
 
