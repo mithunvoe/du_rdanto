@@ -1,0 +1,176 @@
+name: Manual Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      skip_tests:
+        description: 'Skip tests (not recommended)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  pre-deploy-checks:
+    name: Pre-deployment Checks
+    runs-on: ubuntu-24.04
+    if: ${{ !inputs.skip_tests }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test:e2e
+        env:
+          NODE_ENV: development
+          PORT: 3000
+          S3_REGION: us-east-1
+          S3_BUCKET_NAME: ""
+          S3_FORCE_PATH_STYLE: "true"
+          SENTRY_DSN: ""
+          OTEL_EXPORTER_OTLP_ENDPOINT: ""
+          REQUEST_TIMEOUT_MS: "30000"
+          RATE_LIMIT_WINDOW_MS: "60000"
+          RATE_LIMIT_MAX_REQUESTS: "100"
+          CORS_ORIGINS: "*"
+
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-24.04
+    needs: [pre-deploy-checks]
+    if: always() && (needs.pre-deploy-checks.result == 'success' || inputs.skip_tests)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.prod
+          push: false
+          tags: |
+            delineate-hackathon-challenge:${{ inputs.environment }}-${{ github.sha }}
+            delineate-hackathon-challenge:${{ inputs.environment }}-latest
+          cache-from: type=gha,scope=prod
+          cache-to: type=gha,mode=max,scope=prod
+          outputs: type=docker,dest=/tmp/image.tar
+
+      - name: Upload Docker image
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-${{ inputs.environment }}
+          path: /tmp/image.tar
+          retention-days: 1
+
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    runs-on: ubuntu-24.04
+    needs: [build]
+    environment:
+      name: ${{ inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-${{ inputs.environment }}
+          path: /tmp
+
+      - name: Load Docker image
+        run: docker load --input /tmp/image.tar
+
+      - name: Deploy placeholder
+        run: |
+          echo "🚀 Deploying to ${{ inputs.environment }}"
+          echo "Image: delineate-hackathon-challenge:${{ inputs.environment }}-${{ github.sha }}"
+          echo ""
+          echo "Configure your deployment target below:"
+          echo "- Railway: Uncomment Railway deployment step"
+          echo "- Render: Uncomment Render deployment step"
+          echo "- Fly.io: Uncomment Fly.io deployment step"
+          echo "- Custom: Add your deployment commands"
+
+      # Example: Deploy to Railway
+      # - name: Deploy to Railway
+      #   uses: bervProject/railway-deploy@main
+      #   with:
+      #     railway_token: ${{ secrets.RAILWAY_TOKEN }}
+      #     service: delineate-hackathon-challenge
+      #     environment: ${{ inputs.environment }}
+
+      # Example: Deploy to Render
+      # - name: Deploy to Render
+      #   run: |
+      #     curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+
+      # Example: Deploy to Fly.io
+      # - name: Deploy to Fly.io
+      #   uses: superfly/flyctl-actions/setup-flyctl@master
+      # - run: flyctl deploy --remote-only --config fly.${{ inputs.environment }}.toml
+      #   env:
+      #     FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Deployment summary
+        run: |
+          echo "✅ Deployment completed successfully"
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Triggered by: ${{ github.actor }}"
+
+  notify:
+    name: Notify Deployment Status
+    runs-on: ubuntu-24.04
+    needs: [deploy]
+    if: always()
+    steps:
+      - name: Check deployment status
+        id: check
+        run: |
+          if [[ "${{ needs.deploy.result }}" == "success" ]]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "message=Deployment to ${{ inputs.environment }} succeeded" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "message=Deployment to ${{ inputs.environment }} failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Notification placeholder
+        run: |
+          echo "📢 ${{ steps.check.outputs.message }}"
+          echo "Configure Slack/Discord webhooks for notifications"
+
+      # Example: Slack notification
+      # - name: Slack Notification
+      #   uses: 8398a7/action-slack@v3
+      #   with:
+      #     status: ${{ steps.check.outputs.status }}
+      #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      #     text: ${{ steps.check.outputs.message }}
+      #     fields: repo,message,commit,author,action,eventName,ref,workflow
