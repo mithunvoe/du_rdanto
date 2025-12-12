@@ -9,6 +9,7 @@ services:
       - "3000:3000"
     volumes:
       - ../src:/app/src
+      - /app/node_modules
     env_file:
       - ../.env
     environment:
@@ -18,7 +19,7 @@ services:
       - delineate-jaeger
 
   delineate-jaeger:
-    image: jaegertracing/all-in-one:latest
+    image: jaegertracing/all-in-one:1.53
     ports:
       - "16686:16686"
       - "4318:4318"

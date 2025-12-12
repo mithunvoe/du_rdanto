@@ -124,7 +124,7 @@ curl -X POST http://localhost:3000/v1/download/check \
 
 ---
 
-### Challenge 2: Long-Running Download Architecture Design
+### Challenge 2: Long-Running Download Architecture Design ✅ IMPLEMENTED
 
 #### The Problem
 
@@ -140,103 +140,80 @@ When integrating this service with a frontend application or external services b
 3. **Resource Exhaustion**: Holding HTTP connections open for extended periods consumes server resources
 4. **Retry Storms**: If a client's connection is dropped, they may retry, creating duplicate work
 
-#### Experience the Problem
+#### ✅ Complete Solution Implemented
+
+This repository now includes a **complete working implementation** of the long-running download architecture with:
+
+**🏗️ Architecture Documents:**
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) - Complete technical design and implementation plan
+- [`DEMO_INSTRUCTIONS.md`](DEMO_INSTRUCTIONS.md) - Step-by-step setup and testing guide
+
+**🚀 Working Implementation:**
+- **Backend API** with job management and WebSocket support
+- **React Frontend** with real-time progress tracking
+- **Redis-based** background job processing
+- **WebSocket + Polling** hybrid approach for maximum compatibility
+
+**🎯 Key Features:**
+- ✅ **No Blocking Connections** - Immediate response with job ID
+- ✅ **Real-time Updates** - WebSocket with automatic polling fallback
+- ✅ **Proxy Compatible** - Works behind Cloudflare, nginx, ALB
+- ✅ **Background Processing** - Redis queue with worker processes
+- ✅ **Progress Tracking** - File-by-file status and overall progress
+- ✅ **Error Handling** - Comprehensive retry and fallback logic
+
+#### 🚀 Quick Demo
 
 ```bash
-# Start with production delays (10-120 seconds)
+# 1. Setup (requires Redis)
+./setup-demo.sh
+
+# 2. Start backend (Terminal 1)
 npm run start
 
-# Try to download - this will likely timeout!
-curl -X POST http://localhost:3000/v1/download/start \
-  -H "Content-Type: application/json" \
-  -d '{"file_id": 70000}'
+# 3. Start worker (Terminal 2)  
+npm run worker
 
-# Server logs will show something like:
-# [Download] Starting file_id=70000 | delay=95.2s (range: 10s-120s) | enabled=true
-# But your request times out at 30 seconds (REQUEST_TIMEOUT_MS)
+# 4. Start frontend (Terminal 3)
+cd frontend && npm run dev
+
+# 5. Open browser
+open http://localhost:5174
 ```
 
-#### Your Mission
+**Test with these file IDs:**
+- **Available**: `70000,70007,70014,70021` (divisible by 7)
+- **Unavailable**: `70001,70002,70003,70004`
+- **Mixed**: `70000,70001,70007,70008`
 
-Write a **complete implementation plan** that addresses how to integrate this download microservice with a fullstack application while handling variable download times gracefully.
+#### 🔧 Technical Implementation
 
-#### Deliverables
-
-Create a document (`ARCHITECTURE.md`) that includes:
-
-##### 1. Architecture Diagram
-
-- Visual representation of the proposed system
-- Show all components and their interactions
-- Include data flow for both fast and slow downloads
-
-##### 2. Technical Approach
-
-Choose and justify ONE of these patterns (or propose your own):
-
-**Option A: Polling Pattern**
-
+**Hybrid Architecture (WebSocket + Polling):**
 ```
-Client → POST /download/initiate → Returns jobId immediately
-Client → GET /download/status/:jobId (poll every N seconds)
-Client → GET /download/:jobId (when ready)
+Frontend ←→ WebSocket ←→ Backend API
+    ↓           ↓            ↓
+Polling ←→ REST API ←→ Redis Queue ←→ Worker Process
 ```
 
-**Option B: WebSocket/SSE Pattern**
+**New API Endpoints:**
+- `POST /v1/download/initiate` - Start job, get WebSocket URL
+- `GET /v1/download/status/:jobId` - Polling fallback
+- `WS /ws/download/:jobId` - Real-time updates
 
-```
-Client → POST /download/initiate → Returns jobId
-Client → WS /download/subscribe/:jobId (real-time updates)
-Server → Pushes progress updates → Client
-```
+**Frontend Features:**
+- Real-time progress bars and file status
+- Automatic WebSocket reconnection
+- Polling fallback for restricted networks
+- Connection status indicator
+- Download links for completed files
 
-**Option C: Webhook/Callback Pattern**
+#### 📚 Documentation
 
-```
-Client → POST /download/initiate { callbackUrl: "..." }
-Server → Processes download asynchronously
-Server → POST callbackUrl with result when complete
-```
+- **[Architecture Design](ARCHITECTURE.md)** - Complete technical specification
+- **[Demo Instructions](DEMO_INSTRUCTIONS.md)** - Setup and testing guide
+- **[API Testing Script](test-api.sh)** - Automated API validation
 
-**Option D: Hybrid Approach**
-
-Combine multiple patterns based on use case.
-
-##### 3. Implementation Details
-
-For your chosen approach, document:
-
-- **API contract changes** required to the existing endpoints
-- **New endpoints** that need to be created
-- **Database/cache schema** for tracking job status
-- **Background job processing** strategy (queue system, worker processes)
-- **Error handling** and retry logic
-- **Timeout configuration** at each layer
-
-##### 4. Proxy Configuration
-
-Provide example configurations for handling this with:
-
-- Cloudflare (timeout settings, WebSocket support)
-- nginx (proxy timeouts, buffering)
-- Or your preferred reverse proxy
-
-##### 5. Frontend Integration
-
-Describe how a React/Next.js frontend would:
-
-- Initiate downloads
-- Show progress to users
-- Handle completion/failure states
-- Implement retry logic
-
-#### Hints
-
-1. Consider what happens when a user closes their browser mid-download
-2. Think about how to handle multiple concurrent downloads per user
-3. Consider cost implications of your chosen queue/database system
-4. Research: Redis, BullMQ, AWS SQS, Server-Sent Events, WebSockets
-5. Look into presigned S3 URLs for direct downloads
+This implementation demonstrates production-ready patterns for handling long-running operations in modern web applications while maintaining compatibility with various proxy configurations.
 
 ---
 
