@@ -216,24 +216,24 @@ jobs:
             echo "status=success" >> $GITHUB_OUTPUT
           fi
 
-      - name: Notification placeholder
-        run: |
-          echo "📢 Build Status: ${{ steps.check.outputs.status }}"
-          echo "Configure Slack/Discord webhooks in repository secrets"
+      - name: Discord Notification
+        if: always() && secrets.DISCORD_WEBHOOK != ''
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ steps.check.outputs.status }}
+          title: "🚀 CI/CD Pipeline"
+          description: |
+            **Repository:** ${{ github.repository }}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** [`${{ github.sha }}`](${{ github.event.head_commit.url }})
+            **Author:** ${{ github.actor }}
 
-      # Example: Slack notification
-      # - name: Slack Notification
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: ${{ steps.check.outputs.status }}
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-      #     fields: repo,message,commit,author,action,eventName,ref,workflow
-
-      # Example: Discord notification
-      # - name: Discord Notification
-      #   uses: sarisia/actions-status-discord@v1
-      #   with:
-      #     webhook: ${{ secrets.DISCORD_WEBHOOK }}
-      #     status: ${{ steps.check.outputs.status }}
-      #     title: "CI/CD Pipeline"
-      #     description: "Build ${{ steps.check.outputs.status }}"
+            **Job Status:**
+            ${{ needs.lint.result == 'success' && '✅' || needs.lint.result == 'failure' && '❌' || '⏭️' }} Lint & Format
+            ${{ needs.test.result == 'success' && '✅' || needs.test.result == 'failure' && '❌' || '⏭️' }} E2E Tests
+            ${{ needs.build.result == 'success' && '✅' || needs.build.result == 'failure' && '❌' || '⏭️' }} Docker Build
+            ${{ needs.security-scan.result == 'success' && '✅' || needs.security-scan.result == 'failure' && '❌' || '⏭️' }} Security Scan
+          color: ${{ steps.check.outputs.status == 'success' && 0x00FF00 || 0xFF0000 }}
+          username: "CI/CD Bot"
+          avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"

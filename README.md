@@ -554,7 +554,7 @@ This project includes a complete CI/CD pipeline that automatically runs on every
 - ✅ **Security Scanning**: Uses Trivy for container scanning and CodeQL for code analysis
 - ✅ **Dependency Caching**: Caches npm packages and Docker layers for faster builds
 - ✅ **Build Artifacts**: Uploads test results and Docker images
-- ✅ **Notifications**: Placeholder for Slack/Discord notifications
+- ✅ **Discord Notifications**: Real-time notifications for builds, deployments, and security scans
 - ✅ **Manual Deployment**: Supports manual deployment via workflow_dispatch
 - ✅ **Scheduled Scans**: CodeQL runs weekly security analysis
 
@@ -606,6 +606,23 @@ Deployment workflows:
 
 - **Production VPS**: [.github/workflows/deploy-vps.yml](.github/workflows/deploy-vps.yml)
 - **Manual Deploy**: [.github/workflows/manual-deploy.yml](.github/workflows/manual-deploy.yml)
+
+### Discord Notifications
+
+Get real-time updates in your Discord server for all CI/CD activities:
+
+- 🚀 **CI/CD Pipeline**: Build status with detailed job results
+- 🚢 **VPS Deployment**: Deployment success/failure with API URLs
+- 🔒 **Security Scans**: CodeQL analysis results and findings
+- 🎯 **Manual Deployments**: Environment-specific deployment status
+
+**Setup (2 minutes):**
+
+1. Create a Discord webhook in your server
+2. Add it to GitHub Secrets as `DISCORD_WEBHOOK`
+3. Push a commit and watch notifications appear in Discord!
+
+📚 **Full Setup Guide**: [Discord Notifications Documentation](.github/DISCORD_NOTIFICATIONS.md)
 
 ### Security Scanning
 

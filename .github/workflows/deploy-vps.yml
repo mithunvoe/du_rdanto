@@ -119,3 +119,22 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "🔗 **Access the API**: http://${{ secrets.VPS_HOST }}:3000" >> $GITHUB_STEP_SUMMARY
           echo "📚 **API Docs**: http://${{ secrets.VPS_HOST }}:3000/docs" >> $GITHUB_STEP_SUMMARY
+
+      - name: Discord Notification
+        if: always() && secrets.DISCORD_WEBHOOK != ''
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ job.status }}
+          title: "🚢 VPS Deployment"
+          description: |
+            **Environment:** Production VPS
+            **Host:** http://${{ secrets.VPS_HOST }}:3000
+            **Commit:** [`${{ github.sha }}`](${{ github.event.head_commit.url }})
+            **Triggered by:** ${{ github.actor }}
+
+            🔗 [View API](http://${{ secrets.VPS_HOST }}:3000)
+            📚 [API Documentation](http://${{ secrets.VPS_HOST }}:3000/docs)
+          color: ${{ job.status == 'success' && 0x00FF00 || 0xFF0000 }}
+          username: "Deployment Bot"
+          avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"

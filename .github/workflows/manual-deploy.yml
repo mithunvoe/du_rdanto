@@ -161,16 +161,21 @@ jobs:
             echo "message=Deployment to ${{ inputs.environment }} failed" >> $GITHUB_OUTPUT
           fi
 
-      - name: Notification placeholder
-        run: |
-          echo "📢 ${{ steps.check.outputs.message }}"
-          echo "Configure Slack/Discord webhooks for notifications"
+      - name: Discord Notification
+        if: always() && secrets.DISCORD_WEBHOOK != ''
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ steps.check.outputs.status }}
+          title: "🎯 Manual Deployment"
+          description: |
+            **Environment:** ${{ inputs.environment }}
+            **Repository:** ${{ github.repository }}
+            **Commit:** [`${{ github.sha }}`](${{ github.event.head_commit.url }})
+            **Triggered by:** ${{ github.actor }}
+            **Tests:** ${{ inputs.skip_tests && 'Skipped' || 'Passed' }}
 
-      # Example: Slack notification
-      # - name: Slack Notification
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: ${{ steps.check.outputs.status }}
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-      #     text: ${{ steps.check.outputs.message }}
-      #     fields: repo,message,commit,author,action,eventName,ref,workflow
+            **Status:** ${{ steps.check.outputs.message }}
+          color: ${{ steps.check.outputs.status == 'success' && 0x00FF00 || 0xFF0000 }}
+          username: "Deployment Bot"
+          avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
