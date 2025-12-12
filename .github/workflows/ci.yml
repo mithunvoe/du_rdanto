@@ -42,6 +42,7 @@ jobs:
   lint:
     name: Lint & Format Check
     runs-on: ubuntu-24.04
+    needs: notify-start
     container:
       image: node:24-slim
     steps:

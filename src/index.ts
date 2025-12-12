@@ -376,7 +376,7 @@ const healthRoute = createRoute({
 });
 
 app.openapi(rootRoute, (c) => {
-  return c.json({ message: "Hello Homo!" }, 200);
+  return c.json({ message: "Hello Hono!" }, 200);
 });
 
 app.openapi(healthRoute, async (c) => {
