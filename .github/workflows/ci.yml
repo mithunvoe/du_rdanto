@@ -168,38 +168,95 @@ jobs:
           severity: "CRITICAL,HIGH,MEDIUM"
 
   deploy:
-    name: Deploy (Optional)
+    name: Deploy to VPS
     runs-on: ubuntu-24.04
     needs: [build, security-scan]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deployment placeholder
+      - name: Setup SSH key
         run: |
-          echo "🚀 Deployment step placeholder"
-          echo "Configure your deployment target (Railway, Render, Fly.io, etc.)"
-          echo "Uncomment and configure the deployment steps below"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
-      # Example: Deploy to Railway
-      # - name: Deploy to Railway
-      #   uses: bervProject/railway-deploy@main
-      #   with:
-      #     railway_token: ${{ secrets.RAILWAY_TOKEN }}
-      #     service: delineate-hackathon-challenge
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${VPS_USER}@${VPS_HOST} << 'ENDSSH'
+            set -e
 
-      # Example: Deploy to Render
-      # - name: Deploy to Render
-      #   run: |
-      #     curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+            echo "🚀 Starting deployment..."
 
-      # Example: Deploy to Fly.io
-      # - name: Deploy to Fly.io
-      #   uses: superfly/flyctl-actions/setup-flyctl@master
-      # - run: flyctl deploy --remote-only
-      #   env:
-      #     FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+            # Fix DNS resolution on VPS
+            echo "🔧 Configuring DNS..."
+            if ! grep -q "8.8.8.8" /etc/resolv.conf 2>/dev/null; then
+              echo "nameserver 8.8.8.8" | sudo tee -a /etc/resolv.conf > /dev/null
+              echo "nameserver 8.8.4.4" | sudo tee -a /etc/resolv.conf > /dev/null
+              echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
+            fi
+
+            # Navigate to project directory
+            cd /home/ubuntu/du_rdanto || {
+              echo "📁 Creating project directory..."
+              cd /home/ubuntu
+              git clone https://github.com/mithunvoe/du_rdanto.git
+              cd du_rdanto
+            }
+
+            # Pull latest changes
+            echo "📥 Pulling latest code from GitHub..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Add user to docker group if not already (fixes permission issues)
+            if ! groups | grep -q docker; then
+              echo "🔐 Adding user to docker group..."
+              sudo usermod -aG docker $USER
+              echo "⚠️  Note: You may need to log out and back in for group changes to take effect"
+              echo "⚠️  Using sudo for docker commands in this deployment"
+            fi
+
+            # Stop existing containers
+            echo "🛑 Stopping existing containers..."
+            sudo docker compose -f docker/compose.prod.yml down || true
+
+            # Remove old images (optional, saves space)
+            echo "🧹 Cleaning up old images..."
+            sudo docker image prune -f || true
+
+            # Build and start containers
+            echo "🏗️  Building and starting containers..."
+            sudo docker compose -f docker/compose.prod.yml up --build -d
+
+            # Show running containers
+            echo "✅ Deployment complete! Running containers:"
+            sudo docker compose -f docker/compose.prod.yml ps
+
+            # Show logs (last 20 lines)
+            echo "📋 Recent logs:"
+            sudo docker compose -f docker/compose.prod.yml logs --tail=20
+          ENDSSH
+
+      - name: Verify deployment
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          echo "🔍 Verifying deployment..."
+          sleep 10
+
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://${VPS_HOST}:3000/health || echo "000")
+
+          if [ "$response" = "200" ] || [ "$response" = "503" ]; then
+            echo "✅ Deployment verified! API is responding (HTTP $response)"
+          else
+            echo "⚠️  Warning: API health check returned HTTP $response"
+            echo "Check the logs on the VPS for more details"
+            exit 1
+          fi
 
   notify:
     name: Notify Build Status
