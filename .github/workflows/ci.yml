@@ -217,7 +217,7 @@ jobs:
           fi
 
       - name: Discord Notification
-        if: always() && secrets.DISCORD_WEBHOOK != ''
+        if: ${{ always() && secrets.DISCORD_WEBHOOK != '' }}
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
