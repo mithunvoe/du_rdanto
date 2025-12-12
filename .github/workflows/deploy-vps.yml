@@ -121,10 +121,12 @@ jobs:
           echo "📚 **API Docs**: http://${{ secrets.VPS_HOST }}:3000/docs" >> $GITHUB_STEP_SUMMARY
 
       - name: Discord Notification
-        if: ${{ always() && secrets.DISCORD_WEBHOOK != '' }}
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        if: ${{ always() && env.DISCORD_WEBHOOK != '' }}
         uses: sarisia/actions-status-discord@v1
         with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          webhook: ${{ env.DISCORD_WEBHOOK }}
           status: ${{ job.status }}
           title: "🚢 VPS Deployment"
           description: |

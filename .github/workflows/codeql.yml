@@ -50,12 +50,14 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [analyze]
     if: always() && (failure() || github.event_name == 'schedule')
+    env:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
     steps:
       - name: Discord Notification
-        if: ${{ secrets.DISCORD_WEBHOOK != '' }}
+        if: ${{ env.DISCORD_WEBHOOK != '' }}
         uses: sarisia/actions-status-discord@v1
         with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          webhook: ${{ env.DISCORD_WEBHOOK }}
           status: ${{ needs.analyze.result }}
           title: "🔒 CodeQL Security Analysis"
           description: |
