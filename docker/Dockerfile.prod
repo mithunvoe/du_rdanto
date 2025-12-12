@@ -9,9 +9,7 @@ RUN npm ci --only=production
 FROM node:24-alpine
 
 # Install tini for proper signal handling
-# Use ADD to download directly (works without package manager)
-ADD https://github.com/krallin/tini/releases/download/v0.19.0/tini-static-amd64 /sbin/tini
-RUN chmod +x /sbin/tini
+RUN apk add --no-cache tini
 
 WORKDIR /app
 
@@ -19,6 +17,9 @@ WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY package*.json ./
 COPY src ./src
+
+# Create .env file if it doesn't exist (environment variables are set via docker-compose)
+RUN touch .env || true
 
 # Use non-root user with specific UID
 USER node

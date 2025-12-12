@@ -682,5 +682,3 @@ The pipeline includes multiple security scanning tools:
 ## License
 
 MIT
-
-# du_rdanto

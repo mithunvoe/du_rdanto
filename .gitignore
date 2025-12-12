@@ -27,8 +27,3 @@ lerna-debug.log*
 # misc
 .DS_Store
 data/
-
-# SSH keys - DO NOT COMMIT
-*.pem
-*.key
-*.ppk
