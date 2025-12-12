@@ -1,0 +1,50 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+  memory_limiter:
+    limit_mib: 512
+  resource:
+    attributes:
+      - key: service.name
+        value: delineate-hackathon-challenge
+        action: upsert
+
+exporters:
+  # Prometheus metrics
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+  
+  # Elasticsearch (for traces and logs)
+  elasticsearch:
+    endpoints:
+      - http://elasticsearch:9200
+    logs_index: delineate-logs
+    traces_index: delineate-traces
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [elasticsearch]
+    
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
+    
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [elasticsearch]

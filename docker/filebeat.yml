@@ -1,0 +1,32 @@
+filebeat.inputs:
+  - type: container
+    paths:
+      - '/var/lib/docker/containers/*/*.log'
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+      - decode_json_fields:
+          fields: ["message"]
+          target: "json"
+          overwrite_keys: true
+
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+
+output.elasticsearch:
+  hosts: ['elasticsearch:9200']
+  indices:
+    - index: "delineate-logs-%{+yyyy.MM.dd}"
+      when.contains:
+        container.name: "delineate"
+
+setup.template.settings:
+  index.number_of_shards: 1
+  index.codec: best_compression
+
+setup.ilm.enabled: auto
+setup.ilm.rollover_alias: "delineate-logs"
+setup.ilm.pattern: "{now/d}-000001"

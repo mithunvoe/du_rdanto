@@ -16,10 +16,15 @@ services:
       - S3_SECRET_ACCESS_KEY=rustfsadmin
       - S3_BUCKET_NAME=downloads
       - S3_FORCE_PATH_STYLE=true
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://delineate-jaeger:4318
     depends_on:
       delineate-rustfs-init:
         condition: service_completed_successfully
+      delineate-jaeger:
+        condition: service_started
     restart: unless-stopped
+    networks:
+      - delineate-network
 
   delineate-rustfs:
     image: rustfs/rustfs:latest
@@ -35,6 +40,8 @@ services:
       - RUSTFS_ROOT_PASSWORD=rustfsadmin
     user: "10001:10001"
     restart: unless-stopped
+    networks:
+      - delineate-network
 
   delineate-rustfs-init:
     image: amazon/aws-cli:latest
@@ -59,7 +66,25 @@ services:
       - AWS_ACCESS_KEY_ID=rustfsadmin
       - AWS_SECRET_ACCESS_KEY=rustfsadmin
       - AWS_DEFAULT_REGION=us-east-1
+    networks:
+      - delineate-network
+
+  delineate-jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: delineate-jaeger
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    restart: unless-stopped
+    networks:
+      - delineate-network
 
 volumes:
   rustfs-data:
   rustfs-logs:
+
+networks:
+  delineate-network:
+    driver: bridge
