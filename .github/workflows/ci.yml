@@ -72,7 +72,7 @@ jobs:
   test:
     name: E2E Tests
     runs-on: ubuntu-24.04
-    needs: lint
+    needs: [notify-start, lint]
     container:
       image: node:24-slim
     steps:
@@ -122,7 +122,7 @@ jobs:
   build:
     name: Build Docker Images
     runs-on: ubuntu-24.04
-    needs: test
+    needs: [notify-start, test]
     strategy:
       matrix:
         dockerfile: [dev, prod]
@@ -156,7 +156,7 @@ jobs:
   security-scan:
     name: Security Scanning
     runs-on: ubuntu-24.04
-    needs: build
+    needs: [notify-start, build]
     permissions:
       security-events: write
       contents: read
@@ -197,6 +197,7 @@ jobs:
   codeql:
     name: CodeQL Security Analysis
     runs-on: ubuntu-24.04
+    needs: notify-start
     permissions:
       security-events: write
       contents: read
@@ -226,7 +227,7 @@ jobs:
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-24.04
-    needs: [build, security-scan]
+    needs: [notify-start, build, security-scan]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     steps:
       - name: Setup SSH key
@@ -318,7 +319,7 @@ jobs:
     name: Notify Build Status
     runs-on: ubuntu-24.04
     # Include deploy and codeql so notifications happen after all jobs
-    needs: [lint, test, build, security-scan, deploy, codeql]
+    needs: [notify-start, lint, test, build, security-scan, deploy, codeql]
     # Skip notification on pull_request events (secrets are unavailable on forks)
     if: ${{ always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     env:
