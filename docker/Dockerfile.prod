@@ -8,34 +8,9 @@ RUN npm ci --only=production
 
 FROM node:24-alpine
 
-# Install tini and curl for proper signal handling with retry + fallback
-RUN set -eux; \
-  # Try apk first with retries
-  for i in 1 2 3; do \
-    if apk update && apk add --no-cache tini curl; then \
-      break; \
-    fi; \
-    echo "apk attempt $i failed, retrying..."; \
-    sleep 5; \
-  done; \
-  # Fallback to curl download if apk failed
-  if ! command -v tini >/dev/null; then \
-    echo "apk install failed, falling back to curl download"; \
-    # Install curl first if not available
-    apk add --no-cache curl || true; \
-    for j in 1 2 3; do \
-      if curl -fsSL -o /sbin/tini --retry 3 --retry-delay 2 --connect-timeout 10 \
-        --dns-servers 8.8.8.8,8.8.4.4,1.1.1.1 \
-        https://github.com/krallin/tini/releases/download/v0.19.0/tini-muslc-amd64; then \
-        chmod +x /sbin/tini; \
-        break; \
-      fi; \
-      echo "curl attempt $j failed, retrying..."; \
-      sleep 5; \
-    done; \
-  fi; \
-  # Verify installation
-  command -v tini >/dev/null || { echo 'tini installation failed'; exit 1; }
+# Install tini and curl for signal handling and healthchecks
+# Note: DNS must be configured at Docker daemon level (daemon.json)
+RUN apk add --no-cache tini curl
 
 WORKDIR /app
 

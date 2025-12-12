@@ -270,6 +270,28 @@ jobs:
               echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
             fi
 
+            # Configure Docker daemon DNS
+            echo "🔧 Configuring Docker daemon DNS..."
+            sudo mkdir -p /etc/docker
+            NEEDS_RESTART=false
+            if [ ! -f /etc/docker/daemon.json ]; then
+              echo '{"dns": ["8.8.8.8", "8.8.4.4", "1.1.1.1"]}' | sudo tee /etc/docker/daemon.json > /dev/null
+              NEEDS_RESTART=true
+            elif ! grep -q '"dns"' /etc/docker/daemon.json 2>/dev/null; then
+              # Simple overwrite for now - most VPS have minimal daemon.json
+              echo '{"dns": ["8.8.8.8", "8.8.4.4", "1.1.1.1"]}' | sudo tee /etc/docker/daemon.json > /dev/null
+              NEEDS_RESTART=true
+            fi
+
+            if [ "$NEEDS_RESTART" = true ]; then
+              echo "🔄 Restarting Docker daemon..."
+              sudo systemctl restart docker
+              sleep 5
+              echo "✅ Docker daemon DNS configured"
+            else
+              echo "✅ Docker daemon DNS already configured"
+            fi
+
             # Navigate to project directory
             cd /home/ubuntu/du_rdanto || {
               echo "📁 Creating project directory..."
