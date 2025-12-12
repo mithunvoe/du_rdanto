@@ -8,26 +8,34 @@ RUN npm ci --only=production
 
 FROM node:24-alpine
 
-# Install tini for proper signal handling with retry + download fallback (no /etc/resolv.conf writes)
+# Configure DNS and install tini for proper signal handling
 RUN set -eux; \
+  # Configure DNS for better resolution
+  echo "nameserver 8.8.8.8" > /etc/resolv.conf; \
+  echo "nameserver 8.8.4.4" >> /etc/resolv.conf; \
+  echo "nameserver 1.1.1.1" >> /etc/resolv.conf; \
+  # Try apk first with retries
   for i in 1 2 3; do \
-    if apk update && apk add --no-cache tini; then \
+    if apk update && apk add --no-cache tini curl; then \
       break; \
     fi; \
     echo "apk attempt $i failed, retrying..."; \
-    sleep 3; \
+    sleep 5; \
   done; \
+  # Fallback to curl download if apk failed
   if ! command -v tini >/dev/null; then \
-    echo "apk install failed after retries, falling back to static tini download"; \
+    echo "apk install failed, falling back to curl download"; \
     for j in 1 2 3; do \
-      if wget -O /sbin/tini https://github.com/krallin/tini/releases/download/v0.19.0/tini-muslc-amd64; then \
+      if curl -fsSL -o /sbin/tini --retry 3 --retry-delay 2 \
+        https://github.com/krallin/tini/releases/download/v0.19.0/tini-muslc-amd64; then \
         chmod +x /sbin/tini; \
         break; \
       fi; \
-      echo "wget attempt $j failed, retrying..."; \
-      sleep 3; \
+      echo "curl attempt $j failed, retrying..."; \
+      sleep 5; \
     done; \
   fi; \
+  # Verify installation
   command -v tini >/dev/null || { echo 'tini installation failed'; exit 1; }
 
 WORKDIR /app
@@ -51,6 +59,6 @@ ENTRYPOINT ["/sbin/tini", "--"]
 # Run node directly instead of npm for faster startup and cleaner process tree
 CMD ["node", "--experimental-transform-types", "src/index.ts"]
 
-# Healthcheck
+# Healthcheck using curl
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+  CMD curl -f http://localhost:3000/health || exit 1
