@@ -8,9 +8,8 @@ RUN npm ci --only=production
 
 FROM node:24-alpine
 
-# Install tini for proper signal handling with DNS hardening + retry + offline fallback
+# Install tini for proper signal handling with retry + download fallback (no /etc/resolv.conf writes)
 RUN set -eux; \
-  printf 'nameserver 8.8.8.8\nnameserver 1.1.1.1\n' > /etc/resolv.conf; \
   for i in 1 2 3; do \
     if apk update && apk add --no-cache tini; then \
       break; \
@@ -20,9 +19,16 @@ RUN set -eux; \
   done; \
   if ! command -v tini >/dev/null; then \
     echo "apk install failed after retries, falling back to static tini download"; \
-    wget -O /sbin/tini https://github.com/krallin/tini/releases/download/v0.19.0/tini-muslc-amd64; \
-    chmod +x /sbin/tini; \
-  fi
+    for j in 1 2 3; do \
+      if wget -O /sbin/tini https://github.com/krallin/tini/releases/download/v0.19.0/tini-muslc-amd64; then \
+        chmod +x /sbin/tini; \
+        break; \
+      fi; \
+      echo "wget attempt $j failed, retrying..."; \
+      sleep 3; \
+    done; \
+  fi; \
+  command -v tini >/dev/null || { echo 'tini installation failed'; exit 1; }
 
 WORKDIR /app
 

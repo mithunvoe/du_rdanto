@@ -78,7 +78,7 @@ jobs:
   test:
     name: E2E Tests
     runs-on: ubuntu-24.04
-    needs: [notify-start, lint]
+    needs: notify-start
     container:
       image: node:24-slim
     steps:
@@ -125,10 +125,40 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+  codeql:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-24.04
+    needs: notify-start
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["javascript-typescript"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          queries: +security-extended,security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v4
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"
+
   build:
     name: Build Docker Images
     runs-on: ubuntu-24.04
-    needs: [notify-start, test]
+    needs: [lint, test, codeql]
     strategy:
       matrix:
         dockerfile: [dev, prod]
@@ -162,7 +192,7 @@ jobs:
   security-scan:
     name: Security Scanning
     runs-on: ubuntu-24.04
-    needs: [notify-start, build]
+    needs: build
     permissions:
       security-events: write
       contents: read
@@ -200,42 +230,11 @@ jobs:
           format: "table"
           severity: "CRITICAL,HIGH,MEDIUM"
 
-  codeql:
-    name: CodeQL Security Analysis
-    runs-on: ubuntu-24.04
-    # Run after the rest of the pipeline (lint/test/build/security-scan)
-    needs: [notify-start, lint, test, build, security-scan]
-    permissions:
-      security-events: write
-      contents: read
-      actions: read
-    strategy:
-      fail-fast: false
-      matrix:
-        language: ["javascript-typescript"]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: ${{ matrix.language }}
-          queries: +security-extended,security-and-quality
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
-        with:
-          category: "/language:${{ matrix.language }}"
-
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-24.04
     # Deploy only after all validations including CodeQL
-    needs: [notify-start, lint, test, build, security-scan, codeql]
+    needs: [lint, test, codeql, build, security-scan]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     steps:
       - name: Setup SSH key
@@ -327,7 +326,7 @@ jobs:
     name: Notify Build Status
     runs-on: ubuntu-24.04
     # Include deploy and codeql so notifications happen after all jobs
-    needs: [notify-start, lint, test, build, security-scan, deploy, codeql]
+    needs: [notify-start, lint, test, codeql, build, security-scan, deploy]
     # Skip notification on pull_request events (secrets are unavailable on forks)
     if: ${{ always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     env:
