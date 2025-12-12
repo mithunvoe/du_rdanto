@@ -275,20 +275,18 @@ jobs:
             sudo mkdir -p /etc/docker
 
             # Create comprehensive Docker daemon configuration
-            cat << 'DOCKER_CONFIG' | sudo tee /etc/docker/daemon.json > /dev/null
-{
-  "dns": ["127.0.0.53", "8.8.8.8", "8.8.4.4"],
-  "dns-opts": ["timeout:3", "attempts:3"],
-  "ip-forward": true,
-  "iptables": true,
-  "ipv6": false,
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "10m",
-    "max-file": "3"
-  }
-}
-DOCKER_CONFIG
+            echo '{
+              "dns": ["127.0.0.53", "8.8.8.8", "8.8.4.4"],
+              "dns-opts": ["timeout:3", "attempts:3"],
+              "ip-forward": true,
+              "iptables": true,
+              "ipv6": false,
+              "log-driver": "json-file",
+              "log-opts": {
+                "max-size": "10m",
+                "max-file": "3"
+              }
+            }' | sudo tee /etc/docker/daemon.json > /dev/null
 
             echo "🔄 Restarting Docker daemon with new configuration..."
             sudo systemctl restart docker
