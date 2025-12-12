@@ -454,7 +454,131 @@ npm run docker:dev
 
 # Production mode
 npm run docker:prod
+
+# Production mode with full observability stack
+docker compose -f docker/compose.prod.observability.yml up -d
 ```
+
+### Horizontal Scaling (Workers)
+
+The worker service supports horizontal scaling to handle increased load. Multiple worker instances can process jobs concurrently from the shared Redis queue.
+
+**⚠️ Important:** The current implementation uses **manual scaling** via Docker Compose commands. For automatic scaling based on queue size or metrics, see the [Automatic Scaling](#automatic-scaling) section below.
+
+#### Manual Scaling
+
+**Scaling Workers Manually:**
+
+```bash
+# Scale to 3 worker instances (Docker Compose)
+docker compose -f docker/compose.prod.yml up --scale delineate-worker=3 -d
+
+# Scale to 5 worker instances with observability stack
+docker compose -f docker/compose.prod.observability.yml up --scale delineate-worker=5 -d
+
+# Scale down to 1 worker
+docker compose -f docker/compose.prod.yml up --scale delineate-worker=1 -d
+```
+
+**How It Works:**
+
+- Each worker instance connects to the same Redis queue
+- Jobs are distributed automatically using Redis `BRPOP` (blocking pop)
+- Workers are identified by unique IDs in logs (format: `worker-{pid}-{timestamp}`)
+- No configuration changes needed - just scale the service
+
+**Monitoring Worker Instances:**
+
+```bash
+# View running worker containers
+docker ps | grep delineate-worker
+
+# View worker logs
+docker compose -f docker/compose.prod.yml logs -f delineate-worker
+
+# Check queue size in Redis
+docker exec -it delineate-redis redis-cli LLEN queue:downloads
+
+# Count active workers
+docker ps --filter "name=delineate-worker" --format "table {{.Names}}\t{{.Status}}" | wc -l
+```
+
+#### Automatic Scaling
+
+For production environments, automatic scaling based on queue size is available via the included auto-scaling script.
+
+**Recommended: Auto-Scaling Script**
+
+A production-ready auto-scaling script is included that monitors the Redis queue and scales workers automatically:
+
+```bash
+# Run the auto-scaler (recommended for production)
+./scripts/auto-scale-workers.sh docker/compose.prod.yml
+
+# Or with custom configuration
+./scripts/auto-scale-workers.sh docker/compose.prod.yml \
+  --min-workers 2 \
+  --max-workers 10 \
+  --queue-threshold 50 \
+  --scale-down-threshold 10 \
+  --check-interval 30
+
+# Run in background with logging
+nohup ./scripts/auto-scale-workers.sh docker/compose.prod.yml > auto-scaler.log 2>&1 &
+```
+
+**How the Auto-Scaler Works:**
+
+- Monitors Redis queue size every 30 seconds (configurable)
+- Scales UP when queue size exceeds threshold (default: 50 jobs)
+- Scales DOWN when queue size is below threshold (default: 10 jobs)
+- Respects min/max worker limits
+- Logs all scaling actions with timestamps
+
+**Configuration Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--min-workers` | 1 | Minimum number of workers to keep running |
+| `--max-workers` | 10 | Maximum number of workers allowed |
+| `--queue-threshold` | 50 | Queue size that triggers scale-up |
+| `--scale-down-threshold` | 10 | Queue size that triggers scale-down |
+| `--check-interval` | 30 | Seconds between queue checks |
+
+**Alternative: Kubernetes HPA (For Kubernetes Deployments)**
+
+For Kubernetes deployments, use Horizontal Pod Autoscaler:
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: download-worker-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: download-worker
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  - type: External
+    external:
+      metric:
+        name: redis_queue_size
+      target:
+        type: Value
+        value: "50"
+```
+
+**Alternative: Cloud Provider Auto-Scaling**
+
+For cloud deployments, use platform-native auto-scaling:
+
+- **AWS ECS**: Use ECS Service Auto Scaling with CloudWatch metrics
+- **Google Cloud Run**: Automatic scaling based on request rate
+- **Azure Container Instances**: Scale sets with custom metrics
+- **Railway/Render**: Built-in auto-scaling based on metrics
 
 ## Environment Variables
 

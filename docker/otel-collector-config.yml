@@ -24,6 +24,12 @@ exporters:
   prometheus:
     endpoint: "0.0.0.0:8889"
   
+  # Jaeger (for traces via OTLP gRPC)
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  
   # Elasticsearch (for traces and logs)
   elasticsearch:
     endpoints:
@@ -37,8 +43,8 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
-      exporters: [elasticsearch]
+      processors: [memory_limiter, batch, resource]
+      exporters: [otlp/jaeger, elasticsearch]
     
     metrics:
       receivers: [otlp]

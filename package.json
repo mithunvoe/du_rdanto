@@ -28,11 +28,14 @@
     "@scalar/hono-api-reference": "^0.9.28",
     "hono": "^4.10.8",
     "hono-rate-limiter": "^0.4.2",
+    "ioredis": "^5.4.2",
+    "ws": "^8.18.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {
     "@hono/eslint-config": "^2.0.3",
     "@types/node": "^24.10.2",
+    "@types/ws": "^8.18.1",
     "prettier": "^3.7.4",
     "typescript": "^5.8.3"
   }

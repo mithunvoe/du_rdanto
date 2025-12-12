@@ -17,10 +17,53 @@ services:
       - S3_SECRET_ACCESS_KEY=rustfsadmin
       - S3_BUCKET_NAME=downloads
       - S3_FORCE_PATH_STYLE=true
+      - REDIS_URL=redis://delineate-redis:6379
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
     depends_on:
+      - delineate-redis
       - delineate-rustfs-init
       - otel-collector
+    restart: unless-stopped
+    networks:
+      - delineate-network
+
+  # Worker Service (Horizontally Scalable)
+  # To scale: docker compose -f docker/compose.prod.observability.yml up --scale delineate-worker=3
+  delineate-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.prod
+    command: node --experimental-transform-types src/worker.ts
+    env_file:
+      - ../.env
+    environment:
+      - NODE_ENV=production
+      - S3_ENDPOINT=http://delineate-rustfs:9000
+      - S3_ACCESS_KEY_ID=rustfsadmin
+      - S3_SECRET_ACCESS_KEY=rustfsadmin
+      - S3_BUCKET_NAME=downloads
+      - S3_FORCE_PATH_STYLE=true
+      - REDIS_URL=redis://delineate-redis:6379
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    depends_on:
+      - delineate-redis
+      - delineate-rustfs
+      - otel-collector
+    restart: unless-stopped
+    networks:
+      - delineate-network
+    # Manual scaling: docker compose up --scale delineate-worker=N
+    # Automatic scaling: Use scripts/auto-scale-workers.sh
+
+  # Frontend Service
+  delineate-frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend.prod
+    ports:
+      - "5174:80"
+    depends_on:
+      - delineate-app
     restart: unless-stopped
     networks:
       - delineate-network
@@ -237,6 +280,19 @@ services:
     networks:
       - delineate-network
 
+  # Redis (Queue + Cache)
+  delineate-redis:
+    image: redis:7-alpine
+    container_name: delineate-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    networks:
+      - delineate-network
+
 volumes:
   rustfs-data:
   rustfs-logs:
@@ -244,6 +300,7 @@ volumes:
   elasticsearch-data:
   grafana-data:
   loki-data:
+  redis-data:
 
 networks:
   delineate-network:

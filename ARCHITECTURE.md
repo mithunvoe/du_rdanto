@@ -588,7 +588,9 @@ services:
     networks:
       - delineate-network
 
-  # Worker Service
+  # Worker Service (Horizontally Scalable)
+  # Manual scaling: docker compose up --scale delineate-worker=3
+  # Automatic scaling: Use scripts/auto-scale-workers.sh
   delineate-worker:
     build:
       context: ..
@@ -605,8 +607,6 @@ services:
       - delineate-rustfs
       - otel-collector
     restart: unless-stopped
-    deploy:
-      replicas: 3  # Scale workers
     networks:
       - delineate-network
 

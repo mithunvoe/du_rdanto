@@ -13,6 +13,8 @@ import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 import { timeout } from "hono/timeout";
 import { rateLimiter } from "hono-rate-limiter";
+import { WebSocketServer } from "ws";
+import { JobManager } from "./job-manager.ts";
 
 // Context variables type for Hono
 interface Variables {
@@ -51,6 +53,8 @@ const EnvSchema = z.object({
   DOWNLOAD_DELAY_MIN_MS: z.coerce.number().int().min(0).default(10000), // 10 seconds
   DOWNLOAD_DELAY_MAX_MS: z.coerce.number().int().min(0).default(200000), // 200 seconds
   DOWNLOAD_DELAY_ENABLED: z.coerce.boolean().default(true),
+  // Redis configuration
+  REDIS_URL: z.string().default("redis://localhost:6379"),
 });
 
 // Parse and validate environment
@@ -69,6 +73,9 @@ const s3Client = new S3Client({
     }),
   forcePathStyle: env.S3_FORCE_PATH_STYLE,
 });
+
+// Job Manager
+const jobManager = new JobManager(env.REDIS_URL);
 
 // Initialize OpenTelemetry SDK
 const otelSDK = new NodeSDK({
@@ -187,16 +194,41 @@ const DownloadInitiateRequestSchema = z
       .min(1)
       .max(1000)
       .openapi({ description: "Array of file IDs (10K to 100M)" }),
+    callback_url: z.string().url().optional().openapi({ description: "Optional webhook URL for completion notification" }),
   })
   .openapi("DownloadInitiateRequest");
 
 const DownloadInitiateResponseSchema = z
   .object({
-    jobId: z.string().openapi({ description: "Unique job identifier" }),
+    job_id: z.string().openapi({ description: "Unique job identifier" }),
     status: z.enum(["queued", "processing"]),
-    totalFileIds: z.number().int(),
+    total_files: z.number().int(),
+    websocket_url: z.string().openapi({ description: "WebSocket URL for real-time updates" }),
   })
   .openapi("DownloadInitiateResponse");
+
+const DownloadStatusResponseSchema = z
+  .object({
+    job_id: z.string(),
+    status: z.enum(["queued", "processing", "completed", "failed"]),
+    progress: z.object({
+      completed: z.number().int(),
+      total: z.number().int(),
+      percent: z.number().int(),
+      current_file: z.number().int().optional(),
+    }),
+    results: z.array(z.object({
+      file_id: z.number().int(),
+      status: z.enum(["pending", "processing", "completed", "failed"]),
+      download_url: z.string().optional(),
+      size: z.number().int().optional(),
+      error: z.string().optional(),
+    })),
+    created_at: z.number().int(),
+    started_at: z.number().int().optional(),
+    completed_at: z.number().int().optional(),
+  })
+  .openapi("DownloadStatusResponse");
 
 const DownloadCheckRequestSchema = z
   .object({
@@ -411,7 +443,7 @@ const downloadInitiateRoute = createRoute({
   path: "/v1/download/initiate",
   tags: ["Download"],
   summary: "Initiate download job",
-  description: "Initiates a download job for multiple IDs",
+  description: "Initiates a download job for multiple IDs with WebSocket support",
   request: {
     body: {
       content: {
@@ -432,6 +464,45 @@ const downloadInitiateRoute = createRoute({
     },
     400: {
       description: "Invalid request",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    500: {
+      description: "Internal server error",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+const downloadStatusRoute = createRoute({
+  method: "get",
+  path: "/v1/download/status/{jobId}",
+  tags: ["Download"],
+  summary: "Get download job status",
+  description: "Get the current status and progress of a download job (polling fallback)",
+  request: {
+    params: z.object({
+      jobId: z.string().openapi({ description: "Job ID to check status for" }),
+    }),
+  },
+  responses: {
+    200: {
+      description: "Job status retrieved",
+      content: {
+        "application/json": {
+          schema: DownloadStatusResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Job not found",
       content: {
         "application/json": {
           schema: ErrorResponseSchema,
@@ -499,14 +570,85 @@ const downloadCheckRoute = createRoute({
   },
 });
 
-app.openapi(downloadInitiateRoute, (c) => {
-  const { file_ids } = c.req.valid("json");
-  const jobId = crypto.randomUUID();
+app.openapi(downloadInitiateRoute, async (c) => {
+  try {
+    const { file_ids, callback_url } = c.req.valid("json");
+    
+    console.log(`[Download] Initiating job for ${file_ids.length} files`);
+    const job = await jobManager.createJob(file_ids, callback_url);
+  
+  // Determine WebSocket URL based on request origin
+  // Check for forwarded headers first (reverse proxy), then origin/referer, then fallback to relative
+  const forwardedProto = c.req.header("x-forwarded-proto");
+  const forwardedHost = c.req.header("x-forwarded-host");
+  const origin = c.req.header("origin") || c.req.header("referer");
+  
+  let websocketUrl: string;
+  
+  if (forwardedHost) {
+    // Behind reverse proxy - use forwarded headers
+    const protocol = forwardedProto === "https" ? "wss:" : "ws:";
+    websocketUrl = `${protocol}//${forwardedHost}/ws/download/${job.id}`;
+  } else if (origin) {
+    try {
+      const url = new URL(origin);
+      // Use wss:// for https, ws:// for http
+      const wsProtocol = url.protocol === "https:" ? "wss:" : "ws:";
+      websocketUrl = `${wsProtocol}//${url.host}/ws/download/${job.id}`;
+    } catch {
+      // Fallback to relative path if URL parsing fails
+      websocketUrl = `/ws/download/${job.id}`;
+    }
+  } else {
+    // No origin info - use relative path (frontend will convert to absolute)
+    websocketUrl = `/ws/download/${job.id}`;
+  }
+  
+    return c.json(
+      {
+        job_id: job.id,
+        status: job.status === "queued" || job.status === "processing" ? job.status : "queued",
+        total_files: job.file_ids.length,
+        websocket_url: websocketUrl,
+      },
+      200,
+    );
+  } catch (error) {
+    console.error("[Download] Error in initiate endpoint:", error);
+    // Re-throw to let the error handler catch it
+    throw error;
+  }
+});
+
+app.openapi(downloadStatusRoute, async (c) => {
+  const { jobId } = c.req.valid("param");
+  
+  const job = await jobManager.getJob(jobId);
+  if (!job) {
+    return c.json(
+      {
+        error: "Not Found",
+        message: "Job not found",
+        requestId: c.get("requestId"),
+      },
+      404,
+    );
+  }
+  
   return c.json(
     {
-      jobId,
-      status: "queued" as const,
-      totalFileIds: file_ids.length,
+      job_id: job.id,
+      status: job.status,
+      progress: {
+        completed: job.progress.completed,
+        total: job.progress.total,
+        percent: Math.round((job.progress.completed / job.progress.total) * 100),
+        current_file: job.progress.current_file,
+      },
+      results: job.results,
+      created_at: job.created_at,
+      started_at: job.started_at,
+      completed_at: job.completed_at,
     },
     200,
   );
@@ -650,9 +792,21 @@ if (env.NODE_ENV !== "production") {
 const gracefulShutdown = (server: ServerType) => (signal: string) => {
   console.log(`\n${signal} received. Starting graceful shutdown...`);
 
+  // Close WebSocket server
+  wss.close(() => {
+    console.log("WebSocket server closed");
+  });
+
   // Stop accepting new connections
   server.close(() => {
     console.log("HTTP server closed");
+
+    // Cleanup job manager
+    jobManager.cleanup().then(() => {
+      console.log("Job manager cleaned up");
+    }).catch((err: unknown) => {
+      console.error("Error cleaning up job manager:", err);
+    });
 
     // Shutdown OpenTelemetry to flush traces
     otelSDK
@@ -678,14 +832,51 @@ const server = serve(
     fetch: app.fetch,
     port: env.PORT,
   },
-  (info) => {
+  async (info) => {
     console.log(`Server is running on http://localhost:${String(info.port)}`);
     console.log(`Environment: ${env.NODE_ENV}`);
     if (env.NODE_ENV !== "production") {
       console.log(`API docs: http://localhost:${String(info.port)}/docs`);
     }
+    
+    // Subscribe to Redis pub/sub for cross-process WebSocket updates
+    // This allows workers to publish progress updates that get forwarded to WebSocket clients
+    try {
+      await jobManager.subscribeToUpdates();
+      console.log("[Server] Subscribed to Redis pub/sub for job updates");
+    } catch (error) {
+      console.error("[Server] Failed to subscribe to Redis pub/sub:", error);
+      // Continue anyway - direct WebSocket updates will still work for same-process operations
+    }
   },
 );
+
+// WebSocket Server for real-time updates
+const wss = new WebSocketServer({ server: server as any });
+
+wss.on("connection", (ws: any, req: any) => {
+  const url = new URL(req.url!, `http://${req.headers.host}`);
+  const pathMatch = url.pathname.match(/^\/ws\/download\/(.+)$/);
+  
+  if (!pathMatch) {
+    ws.close(1008, "Invalid WebSocket path");
+    return;
+  }
+  
+  const jobId = pathMatch[1];
+  console.log(`[WebSocket] Client connected for job ${jobId}`);
+  
+  // Add connection to job manager
+  jobManager.addConnection(jobId, ws);
+  
+  ws.on("close", () => {
+    console.log(`[WebSocket] Client disconnected from job ${jobId}`);
+  });
+  
+  ws.on("error", (error: Error) => {
+    console.error(`[WebSocket] Error for job ${jobId}:`, error);
+  });
+});
 
 // Register shutdown handlers
 const shutdown = gracefulShutdown(server);

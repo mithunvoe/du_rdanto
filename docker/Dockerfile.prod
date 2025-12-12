@@ -2,9 +2,12 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
+# Install pnpm
+RUN npm install -g pnpm
 
-RUN npm ci --only=production
+COPY package.json pnpm-lock.yaml* ./
+
+RUN pnpm install --prod --frozen-lockfile
 
 FROM node:24-alpine
 
