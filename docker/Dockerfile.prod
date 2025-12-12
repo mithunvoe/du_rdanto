@@ -8,11 +8,16 @@ RUN npm ci --only=production
 
 FROM node:24-alpine
 
-# Install tini and curl for signal handling and healthchecks
-# Use reliable mirror and update package index before installing
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
-    apk update && \
-    apk add --no-cache tini curl
+# Install tini and curl - using multiple fallback strategies
+# Strategy 1: Try default repos
+# Strategy 2: Try with different mirror
+# Strategy 3: Download tini as static binary
+RUN (apk add --no-cache tini curl) || \
+    (sed -i 's/dl-cdn.alpinelinux.org/mirror.leaseweb.com/g' /etc/apk/repositories && \
+     apk update && apk add --no-cache tini curl) || \
+    (wget --no-check-certificate -O /sbin/tini https://github.com/krallin/tini/releases/download/v0.19.0/tini-static-amd64 && \
+     chmod +x /sbin/tini && \
+     apk add --no-cache curl)
 
 WORKDIR /app
 
