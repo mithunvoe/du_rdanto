@@ -202,7 +202,8 @@ jobs:
     name: Notify Build Status
     runs-on: ubuntu-24.04
     needs: [lint, test, build, security-scan]
-    if: always()
+    # Skip notification on pull_request events (secrets are unavailable on forks)
+    if: ${{ always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     steps:
       - name: Check job statuses
         id: check
