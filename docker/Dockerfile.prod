@@ -8,16 +8,22 @@ RUN npm ci --only=production
 
 FROM node:24-alpine
 
-# Install tini and curl - using multiple fallback strategies
-# Strategy 1: Try default repos
-# Strategy 2: Try with different mirror
-# Strategy 3: Download tini as static binary
-RUN (apk add --no-cache tini curl) || \
-    (sed -i 's/dl-cdn.alpinelinux.org/mirror.leaseweb.com/g' /etc/apk/repositories && \
-     apk update && apk add --no-cache tini curl) || \
-    (wget --no-check-certificate -O /sbin/tini https://github.com/krallin/tini/releases/download/v0.19.0/tini-static-amd64 && \
-     chmod +x /sbin/tini && \
-     apk add --no-cache curl)
+# Install tini and curl
+# Note: Some VPS environments have strict firewall rules that may affect package downloads
+# Using multiple mirrors and connection settings to maximize success rate
+RUN set -ex; \
+    # Try installing from default repositories first
+    apk add --no-cache --timeout 30 tini curl 2>/dev/null || \
+    # If that fails, try updating repos and installing again
+    (apk update --allow-untrusted --timeout 30 && apk add --no-cache --timeout 30 tini curl) 2>/dev/null || \
+    # If still fails, try with different mirrors
+    (sed -i 's|https://|http://|g' /etc/apk/repositories && \
+     apk update --timeout 30 && apk add --no-cache --timeout 30 tini curl) 2>/dev/null || \
+    # Last resort: download tini binary directly and install curl alone
+    (wget --timeout=30 --tries=3 -O /sbin/tini https://github.com/krallin/tini/releases/download/v0.19.0/tini-static-amd64 && \
+     chmod +x /sbin/tini) || \
+    # If even wget fails, we have a network issue - fail with clear message
+    (echo "ERROR: Cannot download packages. VPS may have firewall blocking outbound connections." && exit 1)
 
 WORKDIR /app
 

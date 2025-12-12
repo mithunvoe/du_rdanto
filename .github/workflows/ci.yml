@@ -270,26 +270,40 @@ jobs:
               echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
             fi
 
-            # Configure Docker daemon DNS
-            echo "🔧 Configuring Docker daemon DNS..."
+            # Configure Docker daemon DNS and network
+            echo "🔧 Configuring Docker daemon DNS and network..."
             sudo mkdir -p /etc/docker
-            NEEDS_RESTART=false
-            if [ ! -f /etc/docker/daemon.json ]; then
-              echo '{"dns": ["8.8.8.8", "8.8.4.4", "1.1.1.1"]}' | sudo tee /etc/docker/daemon.json > /dev/null
-              NEEDS_RESTART=true
-            elif ! grep -q '"dns"' /etc/docker/daemon.json 2>/dev/null; then
-              # Simple overwrite for now - most VPS have minimal daemon.json
-              echo '{"dns": ["8.8.8.8", "8.8.4.4", "1.1.1.1"]}' | sudo tee /etc/docker/daemon.json > /dev/null
-              NEEDS_RESTART=true
-            fi
 
-            if [ "$NEEDS_RESTART" = true ]; then
-              echo "🔄 Restarting Docker daemon..."
-              sudo systemctl restart docker
-              sleep 5
-              echo "✅ Docker daemon DNS configured"
+            # Create comprehensive Docker daemon configuration
+            cat << 'DOCKER_CONFIG' | sudo tee /etc/docker/daemon.json > /dev/null
+{
+  "dns": ["127.0.0.53", "8.8.8.8", "8.8.4.4"],
+  "dns-opts": ["timeout:3", "attempts:3"],
+  "ip-forward": true,
+  "iptables": true,
+  "ipv6": false,
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  }
+}
+DOCKER_CONFIG
+
+            echo "🔄 Restarting Docker daemon with new configuration..."
+            sudo systemctl restart docker
+            sleep 8
+
+            # Verify Docker is running
+            if sudo systemctl is-active --quiet docker; then
+              echo "✅ Docker daemon restarted successfully"
+              # Test container DNS
+              echo "🧪 Testing container DNS resolution..."
+              sudo docker run --rm alpine:latest sh -c "cat /etc/resolv.conf" || echo "⚠️  Warning: DNS test container failed"
             else
-              echo "✅ Docker daemon DNS already configured"
+              echo "❌ Docker daemon failed to start"
+              sudo journalctl -u docker --no-pager -n 20
+              exit 1
             fi
 
             # Navigate to project directory
