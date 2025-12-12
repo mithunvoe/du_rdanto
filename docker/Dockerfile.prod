@@ -8,8 +8,13 @@ RUN npm ci --only=production
 
 FROM node:24-alpine
 
-# Install tini for proper signal handling
-RUN apk add --no-cache tini
+# Install tini for proper signal handling with a fallback download to handle mirror/DNS hiccups
+RUN set -eux; \
+  apk update && apk add --no-cache tini || { \
+    echo "apk install failed, falling back to static tini download"; \
+    wget -O /sbin/tini https://github.com/krallin/tini/releases/download/v0.19.0/tini-muslc-amd64; \
+    chmod +x /sbin/tini; \
+  }
 
 WORKDIR /app
 
