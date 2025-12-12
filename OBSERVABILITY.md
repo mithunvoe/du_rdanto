@@ -101,7 +101,7 @@ Once services are running, access:
 - Worker activity
 - System resources (CPU, memory)
 
-**Access**: http://localhost:9090
+**Access**: http://localhost:9092
 
 **Example Queries**:
 ```promql

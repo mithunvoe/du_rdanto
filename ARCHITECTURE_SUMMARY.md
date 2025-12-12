@@ -86,7 +86,7 @@ docker compose -f docker/compose.prod.observability.yml up -d
 - Includes: All services + Prometheus, Elasticsearch, Kibana, Grafana
 - Access Grafana: http://localhost:3001 (admin/admin) - Metrics
 - Access Kibana: http://localhost:5601 - Logs & Traces
-- Access Prometheus: http://localhost:9090 - Metrics
+- Access Prometheus: http://localhost:9092 - Metrics
 - Access Elasticsearch: http://localhost:9200 - API
 
 ## File Structure

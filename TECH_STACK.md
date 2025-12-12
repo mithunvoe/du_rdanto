@@ -134,7 +134,7 @@ docker compose -f docker/compose.prod.observability.yml up -d
 |---------|-----|-------------|
 | **Grafana** | http://localhost:3001 | admin/admin |
 | **Kibana** | http://localhost:5601 | No auth (dev) |
-| **Prometheus** | http://localhost:9090 | No auth |
+| **Prometheus** | http://localhost:9092 | No auth |
 | **Elasticsearch** | http://localhost:9200 | No auth (dev) |
 | **API** | http://localhost:3000 | - |
 | **RustFS Console** | http://localhost:9001 | rustfsadmin/rustfsadmin |
