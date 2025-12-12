@@ -19,7 +19,8 @@ jobs:
   notify-start:
     name: Notify Pipeline Start
     runs-on: ubuntu-24.04
-    if: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) || github.event_name == 'workflow_dispatch' }}
+    # Run on all triggers; the step inside handles missing webhooks (e.g., PRs/forks)
+    if: ${{ always() }}
     env:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
     steps:
@@ -38,6 +39,9 @@ jobs:
           color: 0x1E90FF
           username: "CI/CD Bot"
           avatar_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+      - name: Skip notification (no webhook)
+        if: ${{ env.DISCORD_WEBHOOK == '' }}
+        run: echo "DISCORD_WEBHOOK not set; skipping start notification."
 
   lint:
     name: Lint & Format Check
@@ -197,7 +201,8 @@ jobs:
   codeql:
     name: CodeQL Security Analysis
     runs-on: ubuntu-24.04
-    needs: notify-start
+    # Run after the rest of the pipeline (lint/test/build/security-scan)
+    needs: [notify-start, lint, test, build, security-scan]
     permissions:
       security-events: write
       contents: read
@@ -227,7 +232,8 @@ jobs:
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-24.04
-    needs: [notify-start, build, security-scan]
+    # Deploy only after all validations including CodeQL
+    needs: [notify-start, lint, test, build, security-scan, codeql]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     steps:
       - name: Setup SSH key
