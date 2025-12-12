@@ -186,6 +186,7 @@ git push origin your-branch-name
 ### Deployment Configuration
 
 Each platform has:
+
 - Example configuration files
 - Step-by-step setup instructions
 - CI/CD integration examples
@@ -215,6 +216,7 @@ Each platform has:
 ### 1. Lint & Format Check
 
 Ensures code quality and consistency:
+
 - ESLint catches code quality issues
 - Prettier enforces consistent formatting
 - Fast feedback on style violations
@@ -222,6 +224,7 @@ Ensures code quality and consistency:
 ### 2. E2E Tests
 
 Validates functionality:
+
 - Tests all API endpoints
 - Simulates real-world scenarios
 - Catches integration issues early
@@ -229,6 +232,7 @@ Validates functionality:
 ### 3. Build Docker Images
 
 Verifies deployability:
+
 - Builds both dev and prod images
 - Tests Docker configuration
 - Prepares for deployment
@@ -236,6 +240,7 @@ Verifies deployability:
 ### 4. Security Scanning
 
 Protects against vulnerabilities:
+
 - Scans for known CVEs
 - Reports security issues
 - Integrates with GitHub Security
@@ -243,6 +248,7 @@ Protects against vulnerabilities:
 ### 5. Deploy
 
 Automates deployment:
+
 - Only runs on main branch
 - Supports multiple platforms
 - Configurable per environment
@@ -250,6 +256,7 @@ Automates deployment:
 ### 6. Notify
 
 Keeps team informed:
+
 - Aggregates build results
 - Sends notifications
 - Provides quick status updates
@@ -259,6 +266,7 @@ Keeps team informed:
 ### Adding New Checks
 
 1. Add script to `package.json`:
+
 ```json
 "scripts": {
   "check:new": "your-command"
@@ -266,6 +274,7 @@ Keeps team informed:
 ```
 
 2. Add step to workflow:
+
 ```yaml
 - name: Run new check
   run: npm run check:new
@@ -374,34 +383,36 @@ See `CONTRIBUTING.md` for detailed contribution guidelines.
 
 ## 🏆 Challenge 3 Requirements Met
 
-| Requirement | Status | Notes |
-|------------|--------|-------|
-| Pipeline configuration file | ✅ | `.github/workflows/ci.yml` |
-| Trigger on push to main/master | ✅ | Configured |
-| Trigger on pull requests | ✅ | Configured |
-| Run linting | ✅ | ESLint + Prettier |
-| Run format check | ✅ | Prettier |
-| Run E2E tests | ✅ | Full test suite |
-| Build Docker image | ✅ | Dev + Prod |
-| Cache dependencies | ✅ | npm + Docker |
-| Fail fast on errors | ✅ | Configured |
-| Report test results | ✅ | Artifacts |
-| CI/CD section in README | ✅ | With badge |
-| Instructions for contributors | ✅ | CONTRIBUTING.md |
-| How to run tests locally | ✅ | Documented |
-| **Bonus: Deployment** | ✅ | Multiple platforms |
-| **Bonus: Security scanning** | ✅ | Trivy |
-| **Bonus: Branch protection** | ✅ | Documented |
-| **Bonus: Notifications** | ✅ | Placeholders |
+| Requirement                    | Status | Notes                      |
+| ------------------------------ | ------ | -------------------------- |
+| Pipeline configuration file    | ✅     | `.github/workflows/ci.yml` |
+| Trigger on push to main/master | ✅     | Configured                 |
+| Trigger on pull requests       | ✅     | Configured                 |
+| Run linting                    | ✅     | ESLint + Prettier          |
+| Run format check               | ✅     | Prettier                   |
+| Run E2E tests                  | ✅     | Full test suite            |
+| Build Docker image             | ✅     | Dev + Prod                 |
+| Cache dependencies             | ✅     | npm + Docker               |
+| Fail fast on errors            | ✅     | Configured                 |
+| Report test results            | ✅     | Artifacts                  |
+| CI/CD section in README        | ✅     | With badge                 |
+| Instructions for contributors  | ✅     | CONTRIBUTING.md            |
+| How to run tests locally       | ✅     | Documented                 |
+| **Bonus: Deployment**          | ✅     | Multiple platforms         |
+| **Bonus: Security scanning**   | ✅     | Trivy                      |
+| **Bonus: Branch protection**   | ✅     | Documented                 |
+| **Bonus: Notifications**       | ✅     | Placeholders               |
 
 ## 🎯 Score Breakdown
 
 **Base Requirements (10 points)**:
+
 - ✅ Pipeline configuration: 3 points
 - ✅ All required stages: 4 points
 - ✅ Documentation: 3 points
 
 **Bonus Points**:
+
 - ✅ Deployment setup: +2 points
 - ✅ Security scanning: +2 points
 - ✅ Advanced features: +2 points

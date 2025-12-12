@@ -56,18 +56,21 @@ npm run docker:dev
 ## 📊 Pipeline Features
 
 ### Performance Optimizations
+
 - ✅ Dependency caching (30-50% faster)
 - ✅ Docker layer caching (2-3x faster)
 - ✅ Parallel builds (50% faster)
 - ✅ Concurrency control
 
 ### Security Features
+
 - ✅ Trivy vulnerability scanning
 - ✅ SARIF reports to GitHub Security
 - ✅ Automated security checks
 - ✅ No secrets in code
 
 ### Deployment Support
+
 - ✅ Railway
 - ✅ Render
 - ✅ Fly.io
@@ -97,6 +100,7 @@ npm run docker:dev
 ## ✅ Requirements Checklist
 
 ### Base Requirements (10 points)
+
 - ✅ Pipeline configuration file
 - ✅ Trigger on push to main/master
 - ✅ Trigger on pull requests
@@ -113,6 +117,7 @@ npm run docker:dev
 - ✅ How to run tests locally
 
 ### Bonus Features (+6 points)
+
 - ✅ Automatic deployment setup
 - ✅ Security scanning (Trivy)
 - ✅ Branch protection recommendations
@@ -127,11 +132,13 @@ npm run docker:dev
 ### Before Pushing
 
 1. Run pre-flight checks:
+
    ```bash
    npm run ci:check
    ```
 
 2. Fix any issues:
+
    ```bash
    npm run lint:fix
    npm run format

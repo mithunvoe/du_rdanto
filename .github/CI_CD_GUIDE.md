@@ -57,6 +57,7 @@ The project uses **GitHub Actions** for continuous integration and deployment. T
 **Purpose**: Ensure code quality and consistent formatting
 
 **Steps**:
+
 - Checkout code
 - Cache npm dependencies
 - Install dependencies
@@ -66,11 +67,13 @@ The project uses **GitHub Actions** for continuous integration and deployment. T
 **Duration**: ~1-2 minutes
 
 **Failure Reasons**:
+
 - ESLint errors (code quality issues)
 - Formatting violations
 - Dependency installation failures
 
 **How to Fix**:
+
 ```bash
 # Fix linting issues
 npm run lint:fix
@@ -88,6 +91,7 @@ npm run format:check
 **Purpose**: Validate API functionality and business logic
 
 **Steps**:
+
 - Checkout code
 - Cache npm dependencies
 - Install dependencies
@@ -97,6 +101,7 @@ npm run format:check
 **Duration**: ~2-5 minutes
 
 **Environment Variables**:
+
 - `NODE_ENV=development`
 - `PORT=3000`
 - `DOWNLOAD_DELAY_MIN_MS=5000`
@@ -104,12 +109,14 @@ npm run format:check
 - Other configuration variables
 
 **Failure Reasons**:
+
 - Test failures
 - API errors
 - Timeout issues
 - Environment configuration problems
 
 **How to Fix**:
+
 ```bash
 # Run tests locally
 npm run test:e2e
@@ -125,6 +132,7 @@ NODE_ENV=development npm run test:e2e
 **Purpose**: Verify Docker images build successfully
 
 **Steps**:
+
 - Checkout code
 - Set up Docker Buildx
 - Build dev and prod images in parallel
@@ -134,16 +142,19 @@ NODE_ENV=development npm run test:e2e
 **Duration**: ~3-5 minutes (with cache)
 
 **Matrix Strategy**:
+
 - Builds both `Dockerfile.dev` and `Dockerfile.prod`
 - Runs in parallel for efficiency
 
 **Failure Reasons**:
+
 - Dockerfile syntax errors
 - Missing dependencies
 - Build context issues
 - Layer caching problems
 
 **How to Fix**:
+
 ```bash
 # Build locally
 docker build -f docker/Dockerfile.prod -t test:prod .
@@ -158,6 +169,7 @@ docker build --no-cache -f docker/Dockerfile.prod .
 **Purpose**: Detect vulnerabilities in Docker images
 
 **Steps**:
+
 - Download built Docker image
 - Load image into Docker
 - Run Trivy vulnerability scanner
@@ -167,17 +179,20 @@ docker build --no-cache -f docker/Dockerfile.prod .
 **Duration**: ~2-3 minutes
 
 **Severity Levels**:
+
 - CRITICAL - Must fix immediately
 - HIGH - Should fix soon
 - MEDIUM - Fix when possible
 - LOW - Optional fix
 
 **Failure Reasons**:
+
 - Critical or high severity vulnerabilities
 - Scanner configuration issues
 - Image loading problems
 
 **How to Fix**:
+
 ```bash
 # Install Trivy locally
 # Ubuntu/Debian
@@ -199,12 +214,14 @@ trivy image delineate-hackathon-challenge:prod
 **Trigger**: Only on push to main/master branch
 
 **Supported Platforms**:
+
 - Railway
 - Render
 - Fly.io
 - Custom deployment
 
 **Configuration Required**:
+
 1. Uncomment deployment section in `.github/workflows/ci.yml`
 2. Add required secrets to GitHub repository
 3. Configure deployment target
@@ -216,11 +233,13 @@ trivy image delineate-hackathon-challenge:prod
 **Purpose**: Send build status notifications
 
 **Steps**:
+
 - Check all job statuses
 - Aggregate results
 - Send notifications (if configured)
 
 **Supported Platforms**:
+
 - Slack
 - Discord
 - Email
@@ -243,6 +262,7 @@ The pipeline caches npm dependencies to speed up builds:
 ```
 
 **Benefits**:
+
 - Reduces build time by 30-50%
 - Saves bandwidth
 - Improves reliability
@@ -257,6 +277,7 @@ cache-to: type=gha,mode=max,scope=${{ matrix.dockerfile }}
 ```
 
 **Benefits**:
+
 - Faster Docker builds (2-3x speedup)
 - Reduced build time
 - Lower resource usage
@@ -272,6 +293,7 @@ strategy:
 ```
 
 **Benefits**:
+
 - 50% faster than sequential builds
 - Better resource utilization
 - Faster feedback
@@ -287,6 +309,7 @@ concurrency:
 ```
 
 **Benefits**:
+
 - Saves CI/CD minutes
 - Faster feedback on latest changes
 - Reduced queue times
@@ -300,16 +323,19 @@ Set these in GitHub repository settings under **Settings > Secrets and variables
 #### Deployment Secrets
 
 **Railway**:
+
 ```
 RAILWAY_TOKEN=your_railway_token
 ```
 
 **Render**:
+
 ```
 RENDER_DEPLOY_HOOK_URL=your_render_deploy_hook_url
 ```
 
 **Fly.io**:
+
 ```
 FLY_API_TOKEN=your_fly_api_token
 ```
@@ -317,11 +343,13 @@ FLY_API_TOKEN=your_fly_api_token
 #### Notification Secrets
 
 **Slack**:
+
 ```
 SLACK_WEBHOOK=your_slack_webhook_url
 ```
 
 **Discord**:
+
 ```
 DISCORD_WEBHOOK=your_discord_webhook_url
 ```
@@ -363,23 +391,27 @@ Recommended settings for main/master branch:
 ### Viewing Pipeline Results
 
 **Actions Tab**:
+
 - URL: `https://github.com/bongodev/cuet-micro-ops-hackthon-2025/actions`
 - View all workflow runs
 - See detailed logs for each step
 - Download artifacts
 
 **Security Tab**:
+
 - URL: `https://github.com/bongodev/cuet-micro-ops-hackthon-2025/security`
 - View vulnerability scan results
 - See security advisories
 - Track security issues
 
 **Pull Requests**:
+
 - See check status directly on PR pages
 - View detailed check results
 - Re-run failed checks
 
 **Commit History**:
+
 - See check status badges next to each commit
 - Quick status overview
 
@@ -391,6 +423,7 @@ Recommended settings for main/master branch:
    - Read error messages
 
 2. **Reproduce locally**:
+
    ```bash
    # Run the same commands locally
    npm ci
@@ -417,6 +450,7 @@ Recommended settings for main/master branch:
 **Cause**: package-lock.json out of sync
 
 **Solution**:
+
 ```bash
 rm -rf node_modules package-lock.json
 npm install
@@ -429,6 +463,7 @@ git commit -m "chore: update package-lock.json"
 **Cause**: Long-running operations or server not starting
 
 **Solution**:
+
 - Check server startup logs
 - Increase timeout values
 - Verify environment variables
@@ -439,6 +474,7 @@ git commit -m "chore: update package-lock.json"
 **Cause**: Missing files or incorrect context
 
 **Solution**:
+
 ```bash
 # Check .dockerignore
 cat .dockerignore
@@ -455,6 +491,7 @@ docker build --progress=plain -f docker/Dockerfile.prod .
 **Cause**: Critical vulnerabilities detected
 
 **Solution**:
+
 - Update base image version
 - Update npm dependencies
 - Apply security patches
@@ -465,6 +502,7 @@ docker build --progress=plain -f docker/Dockerfile.prod .
 ### For Developers
 
 1. **Run checks locally before pushing**
+
    ```bash
    npm run lint && npm run format:check && npm run test:e2e
    ```
@@ -527,6 +565,7 @@ docker build --progress=plain -f docker/Dockerfile.prod .
 ### Adding New Checks
 
 1. Add script to `package.json`:
+
    ```json
    "scripts": {
      "check:new": "your-command-here"
