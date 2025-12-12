@@ -156,6 +156,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 ```
 
 **Types**:
+
 - `feat` - New feature
 - `fix` - Bug fix
 - `docs` - Documentation
@@ -165,6 +166,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 - `chore` - Maintenance
 
 **Examples**:
+
 ```bash
 git commit -m "feat(api): add webhook support"
 git commit -m "fix(docker): resolve S3 connection issue"
@@ -197,6 +199,7 @@ Your PR is ready to merge when:
 ## 📊 Pipeline Status
 
 View pipeline status:
+
 - **Actions tab**: `https://github.com/bongodev/cuet-micro-ops-hackthon-2025/actions`
 - **Your PR**: Check status at the bottom of PR page
 - **Badge**: ![CI/CD Status](https://github.com/bongodev/cuet-micro-ops-hackthon-2025/actions/workflows/ci.yml/badge.svg)

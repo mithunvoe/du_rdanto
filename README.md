@@ -1,5 +1,9 @@
 # Delineate Hackathon Challenge - CUET Fest 2025
 
+[![CI/CD Pipeline](https://github.com/mithunvoe/du_rdanto/actions/workflows/ci.yml/badge.svg)](https://github.com/mithunvoe/du_rdanto/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/mithunvoe/du_rdanto/actions/workflows/codeql.yml/badge.svg)](https://github.com/mithunvoe/du_rdanto/actions/workflows/codeql.yml)
+[![Manual Deploy](https://github.com/mithunvoe/du_rdanto/actions/workflows/manual-deploy.yml/badge.svg)](https://github.com/mithunvoe/du_rdanto/actions/workflows/manual-deploy.yml)
+
 ## The Scenario
 
 This microservice simulates a **real-world file download system** where processing times vary significantly:
@@ -526,6 +530,92 @@ npm run docker:dev   # Start with Docker (development)
 npm run docker:prod  # Start with Docker (production)
 ```
 
+## CI/CD Pipeline
+
+[![CI/CD Status](https://github.com/mithunvoe/du_rdanto/actions/workflows/ci.yml/badge.svg)](https://github.com/mithunvoe/du_rdanto/actions/workflows/ci.yml)
+
+This project includes a complete CI/CD pipeline that automatically runs on every push and pull request.
+
+### Pipeline Stages
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│    Lint     │───▶│    Test     │───▶│    Build    │───▶│  Security   │───▶│   Deploy    │
+│  (ESLint,   │    │   (E2E)     │    │  (Docker)   │    │   (Trivy)   │    │ (Optional)  │
+│  Prettier)  │    │             │    │             │    │             │    │             │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+```
+
+### Features
+
+- ✅ **Automated Testing**: Runs linting, formatting checks, and E2E tests
+- ✅ **Docker Builds**: Builds both development and production Docker images
+- ✅ **Security Scanning**: Uses Trivy for container scanning and CodeQL for code analysis
+- ✅ **Dependency Caching**: Caches npm packages and Docker layers for faster builds
+- ✅ **Build Artifacts**: Uploads test results and Docker images
+- ✅ **Notifications**: Placeholder for Slack/Discord notifications
+- ✅ **Manual Deployment**: Supports manual deployment via workflow_dispatch
+- ✅ **Scheduled Scans**: CodeQL runs weekly security analysis
+
+### Running Tests Locally
+
+Before pushing code, ensure all checks pass locally:
+
+```bash
+# Run all CI checks locally
+npm run ci:local
+
+# Or run individual checks
+npm run lint          # Code quality
+npm run format:check  # Code formatting
+npm run test:e2e      # End-to-end tests
+```
+
+### For Contributors
+
+1. **All PRs must pass CI checks** before merging
+2. Run `npm run ci:local` before creating a PR
+3. Fix any linting or formatting issues with:
+   ```bash
+   npm run lint:fix
+   npm run format
+   ```
+4. Ensure E2E tests pass locally before pushing
+5. See [Branch Protection Guide](.github/BRANCH_PROTECTION.md) for recommended repository settings
+
+### Deployment
+
+The pipeline includes a deployment stage that can be configured for:
+
+- **Railway**: Uncomment Railway deployment in [ci.yml](.github/workflows/ci.yml#L182-L186)
+- **Render**: Add your deploy hook URL to secrets
+- **Fly.io**: Configure Fly.io token in repository secrets
+
+See [.github/workflows/ci.yml](.github/workflows/ci.yml) for deployment configuration.
+
+### Security Scanning
+
+The pipeline includes multiple security scanning tools:
+
+**Trivy (Container Security)**
+
+- Scans Docker images for vulnerabilities
+- Checks for CRITICAL and HIGH severity issues
+- Results uploaded to GitHub Security tab
+- Fails build if critical vulnerabilities found
+
+**CodeQL (Code Analysis)**
+
+- Static code analysis for security vulnerabilities
+- Runs security-extended and security-and-quality queries
+- Scheduled weekly scans on Mondays
+- Detects common security issues (SQL injection, XSS, etc.)
+
+### Viewing Pipeline Results
+
+- **GitHub Actions**: [View all workflow runs](https://github.com/mithunvoe/du_rdanto/actions)
+- **Security Alerts**: [View security findings](https://github.com/mithunvoe/du_rdanto/security)
+
 ## Project Structure
 
 ```
@@ -561,4 +651,5 @@ npm run docker:prod  # Start with Docker (production)
 ## License
 
 MIT
+
 # du_rdanto

@@ -28,13 +28,13 @@ Before deploying, ensure you have:
 
 ## Deployment Options
 
-| Platform | Difficulty | Cost | Best For |
-|----------|-----------|------|----------|
-| Railway | Easy | Free tier available | Quick prototypes |
-| Render | Easy | Free tier available | Small projects |
-| Fly.io | Medium | Pay-as-you-go | Production apps |
-| AWS | Hard | Pay-as-you-go | Enterprise scale |
-| Self-hosted | Hard | Infrastructure cost | Full control |
+| Platform    | Difficulty | Cost                | Best For         |
+| ----------- | ---------- | ------------------- | ---------------- |
+| Railway     | Easy       | Free tier available | Quick prototypes |
+| Render      | Easy       | Free tier available | Small projects   |
+| Fly.io      | Medium     | Pay-as-you-go       | Production apps  |
+| AWS         | Hard       | Pay-as-you-go       | Enterprise scale |
+| Self-hosted | Hard       | Infrastructure cost | Full control     |
 
 ## Railway Deployment
 
@@ -403,11 +403,13 @@ Most platforms support health checks:
 **Railway**: Automatic via `/health` endpoint
 
 **Render**: Configure in `render.yaml`:
+
 ```yaml
 healthCheckPath: /health
 ```
 
 **Fly.io**: Configure in `fly.toml`:
+
 ```toml
 [[http_service.checks]]
   path = "/health"
@@ -416,6 +418,7 @@ healthCheckPath: /health
 ```
 
 **AWS ALB**: Configure target group health check:
+
 - Path: `/health`
 - Interval: 30 seconds
 - Timeout: 5 seconds
@@ -429,6 +432,7 @@ healthCheckPath: /health
 **Symptoms**: Service marked as unhealthy
 
 **Solutions**:
+
 1. Check S3 connectivity
 2. Verify environment variables
 3. Check application logs
@@ -447,6 +451,7 @@ curl -v http://localhost:3000/health
 **Symptoms**: Requests timeout after 30 seconds
 
 **Solutions**:
+
 1. Increase `REQUEST_TIMEOUT_MS`
 2. Implement async processing (see Challenge 2)
 3. Use polling or webhooks
@@ -457,6 +462,7 @@ curl -v http://localhost:3000/health
 **Symptoms**: Storage check returns error
 
 **Solutions**:
+
 1. Verify S3 endpoint is accessible
 2. Check credentials
 3. Ensure bucket exists
@@ -472,6 +478,7 @@ aws s3 ls s3://downloads --endpoint-url http://your-endpoint
 **Symptoms**: Container crashes or restarts
 
 **Solutions**:
+
 1. Increase memory allocation
 2. Check for memory leaks
 3. Optimize application code
@@ -487,6 +494,7 @@ docker stats container-name
 **Symptoms**: Slow response times
 
 **Solutions**:
+
 1. Enable auto-scaling
 2. Optimize code
 3. Add caching
@@ -517,22 +525,26 @@ docker stats container-name
 ### Quick Rollback
 
 **Railway**:
+
 ```bash
 railway rollback
 ```
 
 **Render**:
+
 - Go to dashboard
 - Select previous deployment
 - Click "Rollback"
 
 **Fly.io**:
+
 ```bash
 fly releases
 fly releases rollback <version>
 ```
 
 **Docker**:
+
 ```bash
 # Pull previous version
 docker pull your-registry/app:previous-tag

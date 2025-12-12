@@ -146,22 +146,22 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: delineate-hackathon-challenge:prod-${{ github.sha }}
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
 
       - name: Run Trivy vulnerability scanner (table output)
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: delineate-hackathon-challenge:prod-${{ github.sha }}
-          format: 'table'
-          severity: 'CRITICAL,HIGH,MEDIUM'
+          format: "table"
+          severity: "CRITICAL,HIGH,MEDIUM"
 
   deploy:
     name: Deploy (Optional)
@@ -219,7 +219,7 @@ jobs:
         run: |
           echo "📢 Build Status: ${{ steps.check.outputs.status }}"
           echo "Configure Slack/Discord webhooks in repository secrets"
-          
+
       # Example: Slack notification
       # - name: Slack Notification
       #   uses: 8398a7/action-slack@v3

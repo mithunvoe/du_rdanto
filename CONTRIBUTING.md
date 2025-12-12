@@ -16,17 +16,20 @@ Thank you for contributing to the Delineate Hackathon Challenge project! This gu
 
 1. Fork the repository on GitHub
 2. Clone your fork locally:
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/cuet-micro-ops-hackthon-2025.git
    cd cuet-micro-ops-hackthon-2025
    ```
 
 3. Add the upstream repository:
+
    ```bash
    git remote add upstream https://github.com/bongodev/cuet-micro-ops-hackthon-2025.git
    ```
 
 4. Install dependencies:
+
    ```bash
    npm install
    ```
@@ -49,6 +52,7 @@ git checkout -b fix/your-bug-fix
 ```
 
 Branch naming conventions:
+
 - `feature/` - New features
 - `fix/` - Bug fixes
 - `docs/` - Documentation updates
@@ -94,6 +98,7 @@ git commit -m "feat: add new download status endpoint"
 ```
 
 Commit message format:
+
 ```
 <type>(<scope>): <subject>
 
@@ -103,6 +108,7 @@ Commit message format:
 ```
 
 Types:
+
 - `feat` - New feature
 - `fix` - Bug fix
 - `docs` - Documentation changes
@@ -113,6 +119,7 @@ Types:
 - `perf` - Performance improvements
 
 Examples:
+
 ```bash
 feat(api): add webhook callback support for downloads
 fix(docker): resolve S3 connection timeout issue
@@ -181,17 +188,17 @@ git push origin feature/your-feature-name
 
 ```typescript
 // Good test structure
-describe('Download API', () => {
-  it('should return 200 for valid file_id', async () => {
+describe("Download API", () => {
+  it("should return 200 for valid file_id", async () => {
     // Arrange
     const fileId = 70000;
-    
+
     // Act
-    const response = await fetch('/v1/download/check', {
-      method: 'POST',
-      body: JSON.stringify({ file_id: fileId })
+    const response = await fetch("/v1/download/check", {
+      method: "POST",
+      body: JSON.stringify({ file_id: fileId }),
     });
-    
+
     // Assert
     expect(response.status).toBe(200);
   });
@@ -231,24 +238,30 @@ describe('Download API', () => {
 
 ```markdown
 ## Description
+
 Brief description of changes
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Breaking change
 - [ ] Documentation update
 
 ## Related Issues
+
 Closes #123
 
 ## Testing
+
 Describe testing performed
 
 ## Screenshots (if applicable)
+
 Add screenshots here
 
 ## Checklist
+
 - [ ] Tests pass locally
 - [ ] Code follows style guidelines
 - [ ] Documentation updated

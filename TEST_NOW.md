@@ -51,7 +51,7 @@ You'll see the "CI/CD Pipeline" workflow running in real-time!
 ```
 ✅ CI/CD Pipeline
    ✅ Lint & Format Check
-   ✅ E2E Tests  
+   ✅ E2E Tests
    ✅ Build Docker Images
       ✅ dev
       ✅ prod
@@ -108,6 +108,7 @@ git push origin test/ci-pipeline-1765514035
 ```
 
 **Benefits**:
+
 - See checks at the bottom of PR
 - Test the PR workflow
 - Can merge when ready
@@ -139,11 +140,13 @@ gh run watch
 ### If the workflow doesn't start:
 
 1. **Check the file is committed**:
+
    ```bash
    git log --oneline -1
    ```
 
 2. **Verify the workflow file exists**:
+
    ```bash
    ls -la .github/workflows/ci.yml
    ```

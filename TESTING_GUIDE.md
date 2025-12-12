@@ -31,6 +31,7 @@ git push origin main
 ### Step 3: Verify Results
 
 Check that all stages complete successfully:
+
 - ✅ Lint & Format Check
 - ✅ E2E Tests
 - ✅ Build Docker Images (dev + prod)
@@ -60,6 +61,7 @@ git push origin test/ci-pipeline
 ```
 
 **What happens:**
+
 - Pipeline runs automatically on push
 - All 6 stages execute
 - You can see detailed logs for each step
@@ -82,6 +84,7 @@ git push origin test/ci-pipeline
 ```
 
 **What happens:**
+
 - Pipeline runs on the PR
 - Status checks appear at the bottom of the PR
 - You can see which checks passed/failed
@@ -107,6 +110,7 @@ Test the manual deployment feature:
 ```
 
 **What happens:**
+
 - Workflow runs with your selected options
 - You can deploy to different environments
 - Useful for testing deployment configurations
@@ -140,11 +144,13 @@ gh run view <run-id> --log
 **Duration**: ~1-2 minutes
 
 **Checks**:
+
 - ESLint runs without errors
 - Prettier formatting is correct
 - Dependencies install successfully
 
 **If it fails**:
+
 ```bash
 # Fix locally
 npm run lint:fix
@@ -160,11 +166,13 @@ git push
 **Duration**: ~2-5 minutes
 
 **Checks**:
+
 - All E2E tests pass
 - Server starts correctly
 - API endpoints respond
 
 **If it fails**:
+
 ```bash
 # Test locally
 npm run test:e2e
@@ -179,11 +187,13 @@ npm run test:e2e
 **Duration**: ~3-5 minutes (first run), ~1-2 minutes (cached)
 
 **Checks**:
+
 - Dev Dockerfile builds successfully
 - Prod Dockerfile builds successfully
 - Images are saved as artifacts
 
 **If it fails**:
+
 ```bash
 # Test locally
 docker build -f docker/Dockerfile.prod -t test:prod .
@@ -198,15 +208,18 @@ docker build -f docker/Dockerfile.dev -t test:dev .
 **Duration**: ~2-3 minutes
 
 **Checks**:
+
 - Trivy scans Docker images
 - Vulnerabilities are reported
 - SARIF report uploaded to Security tab
 
 **View results**:
+
 - Go to: https://github.com/mithunvoe/du_rdanto/security
 - Click "Code scanning alerts"
 
 **If it fails**:
+
 - Check severity levels (CRITICAL, HIGH)
 - Update base images or dependencies
 - Some warnings are acceptable
@@ -224,6 +237,7 @@ docker build -f docker/Dockerfile.dev -t test:dev .
 **Duration**: ~10 seconds
 
 **Checks**:
+
 - Aggregates all job results
 - Reports overall status
 - (Notifications disabled by default)
@@ -231,17 +245,20 @@ docker build -f docker/Dockerfile.dev -t test:dev .
 ## 📊 Expected Results
 
 ### First Run (No Cache)
+
 - **Total time**: ~8-15 minutes
 - **Stages**: All 6 stages run
 - **Artifacts**: Test results + Docker images uploaded
 - **Cache**: Created for future runs
 
 ### Subsequent Runs (With Cache)
+
 - **Total time**: ~5-10 minutes
 - **Speedup**: 30-50% faster
 - **Cache hit**: Dependencies and Docker layers reused
 
 ### Success Indicators
+
 - ✅ All jobs show green checkmarks
 - ✅ No red X marks
 - ✅ Artifacts are uploaded
@@ -255,6 +272,7 @@ docker build -f docker/Dockerfile.dev -t test:dev .
 **Cause**: Code style violations
 
 **Solution**:
+
 ```bash
 npm run lint:fix
 npm run format
@@ -268,6 +286,7 @@ git push
 **Cause**: Test failures or environment issues
 
 **Solution**:
+
 ```bash
 # Run tests locally to see errors
 npm run test:e2e
@@ -282,6 +301,7 @@ npm run test:e2e
 **Cause**: Dockerfile syntax errors or missing files
 
 **Solution**:
+
 ```bash
 # Test build locally
 docker build -f docker/Dockerfile.prod .
@@ -296,6 +316,7 @@ docker build -f docker/Dockerfile.prod .
 **Cause**: Critical vulnerabilities detected
 
 **Solution**:
+
 ```bash
 # Install Trivy locally
 # Ubuntu: sudo apt install trivy
@@ -313,6 +334,7 @@ trivy image your-image:tag
 **Cause**: GitHub Actions permissions
 
 **Solution**:
+
 1. Go to repository Settings
 2. Click "Actions" → "General"
 3. Under "Workflow permissions"
@@ -324,6 +346,7 @@ trivy image your-image:tag
 **Cause**: Workflow file not in correct location or syntax error
 
 **Solution**:
+
 ```bash
 # Verify file location
 ls -la .github/workflows/ci.yml
@@ -352,6 +375,7 @@ chmod +x scripts/test-pipeline.sh
 ```
 
 **The script will**:
+
 - Check your Git repository status
 - Verify workflow files exist
 - Validate YAML syntax
@@ -372,7 +396,7 @@ chmod +x scripts/test-pipeline.sh
    ✅ Security Scanning (2m 34s)
    ⏭️ Deploy (skipped)
    ✅ Notify (8s)
-   
+
 Total time: 11m 54s
 ```
 
@@ -394,6 +418,7 @@ Merging can be performed automatically
 Once the pipeline passes:
 
 1. **Merge your changes** (if using a test branch)
+
    ```bash
    # Via GitHub UI or command line
    gh pr merge --squash
