@@ -9,7 +9,11 @@ RUN npm ci --only=production
 FROM node:24-alpine
 
 # Install tini for proper signal handling
-RUN apk add --no-cache tini
+# Download directly from GitHub to avoid Alpine repository DNS issues
+RUN apk add --no-cache wget ca-certificates && \
+    wget -O /sbin/tini https://github.com/krallin/tini/releases/download/v0.19.0/tini-static-amd64 && \
+    chmod +x /sbin/tini && \
+    apk del wget
 
 WORKDIR /app
 
