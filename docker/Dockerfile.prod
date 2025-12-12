@@ -9,9 +9,9 @@ RUN npm ci --only=production
 FROM node:24-alpine
 
 # Install tini for proper signal handling
-# Use curl (pre-installed) to avoid DNS issues with Alpine repositories
-RUN curl -fsSL -o /sbin/tini https://github.com/krallin/tini/releases/download/v0.19.0/tini-static-amd64 && \
-    chmod +x /sbin/tini
+# Use ADD to download directly (works without package manager)
+ADD https://github.com/krallin/tini/releases/download/v0.19.0/tini-static-amd64 /sbin/tini
+RUN chmod +x /sbin/tini
 
 WORKDIR /app
 
